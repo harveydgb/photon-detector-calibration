@@ -1,0 +1,13 @@
+LICENSE
+README.md
+pyproject.toml
+s1_sol/__init__.py
+s1_sol/main.py
+s1_sol/mphil.mplstyle
+s1_sol/q1.py
+s1_sol/q2.py
+s1_sol.egg-info/PKG-INFO
+s1_sol.egg-info/SOURCES.txt
+s1_sol.egg-info/dependency_links.txt
+s1_sol.egg-info/requires.txt
+s1_sol.egg-info/top_level.txt
