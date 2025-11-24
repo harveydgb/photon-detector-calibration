@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from iminuit import Minuit
 from iminuit.cost import UnbinnedNLL
-
+import matplotlib.cm as cm      
+import matplotlib.colors as mcolors
 
 def plot_unbinned_mle(df):
     """Performs an unbinned ML fit for each E_0 using iminuit and plots the inidividual fits of each E_0 overlaid."""
@@ -23,6 +24,15 @@ def plot_unbinned_mle(df):
     #defining function iminuit can read
     def gaussian_pdf(x, mu, sigma):
         return norm.pdf(x, loc=mu, scale=sigma)
+
+    #setting histogram plotting colors
+    unique_energies = sorted(df['E_true'].unique())
+    norm_color = mcolors.Normalize(vmin=min(unique_energies), vmax=max(unique_energies))
+    cmap = cm.viridis
+
+    #defining common bins
+    common_bins = np.linspace(-20, 20, 50)
+    bin_width = common_bins[1] - common_bins[0]
 
     #iterating over each E_0 group
     for E_0, group in df.groupby('E_true'):
@@ -50,9 +60,9 @@ def plot_unbinned_mle(df):
 
         residuals = data - E_0
 
-        #plotting
-        counts, bins, _ = ax1.hist(residuals, bins=50, histtype='step', label=f'$E_0={E_0}$', alpha=0.8)
-        bin_width = bins[1] - bins[0]
+        #plotting left-hand graph
+        color = cmap(norm_color(E_0))
+        counts, bins, _ = ax1.hist(residuals, bins=common_bins, histtype='step', label=f'$E_0={E_0}$', alpha=0.8, color=color)
         n_events = len(data)
 
         pdf_y = norm.pdf(x_arr, loc=(mu_hat - E_0), scale = sigma_hat)
@@ -60,11 +70,28 @@ def plot_unbinned_mle(df):
         #scale the pdf to match the histogram area
         scaled_pdf = pdf_y * (n_events * bin_width)
 
-        #plotting the curve
-        ax1.plot(x_arr, scaled_pdf, linestyle='--', linewidth=1, alpha = 0.8)
+        #plotting the curves on the left-hand graph
+        ax1.plot(x_arr, scaled_pdf, linestyle='--', linewidth=1, alpha = 0.8, color=color)
 
         total_summed_pdf += scaled_pdf
 
+    #plotting right-hand graph
+    all_diffs = df['E_rec'] - df['E_true']
+    ax2.hist(all_diffs, bins=common_bins, histtype='step', color='k', label='Total Data', linewidth=1.5)
+    ax2.plot(x_arr, total_summed_pdf, 'r-', label='Sum of Fits', linewidth=1.5)
+
+    #extra formatting
+    ax1.set_xlabel(r"$(E - E_0)$ [GeV]")
+    ax1.set_ylabel("Frequency")
+    ax1.set_title("Individual Fits")
+    ax1.legend()
+    
+    ax2.set_xlabel(r"$(E - E_0)$ [GeV]")
+    ax2.set_ylabel("Frequency")
+    ax2.set_title("Total Data vs. Sum of Fits")
+    ax2.legend()
+    
+    fig.tight_layout()
 
     return fit_results, fig
     

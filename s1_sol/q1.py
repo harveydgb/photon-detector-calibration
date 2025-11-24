@@ -8,6 +8,8 @@ import requests
 import pandas as pd
 from scipy.optimize import curve_fit
 import os
+import matplotlib.cm as cm      
+import matplotlib.colors as mcolors
 
 # Question 1) (i)
 def plot_total_hist(df):
@@ -37,10 +39,16 @@ def plot_overlapping_hist(df):
     
     fig, ax = plt.subplots(figsize=(6.4, 4.8))
     
+    #setting histogram plotting colors
+    unique_energies = sorted(df['E_true'].unique())
+    norm_color = mcolors.Normalize(vmin=min(unique_energies), vmax=max(unique_energies))
+    cmap = cm.viridis
+
     # plotting hist differences across each E_0
     for E_0, group in df.groupby('E_true'):
         diff = group['E_rec'] - E_0
-        ax.hist(diff, bins=50, histtype='step', label=f'$E_0={E_0}$')
+        color = cmap(norm_color(E_0))
+        ax.hist(diff, bins=50, histtype='step',color=color, label=f'$E_0={E_0}$')
     
     ax.set_xlabel(r"$(E - E_0)$ [GeV]")
     ax.set_ylabel("Frequency")
