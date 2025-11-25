@@ -8,10 +8,11 @@ from iminuit import Minuit
 from iminuit.cost import UnbinnedNLL
 import matplotlib.cm as cm      
 import matplotlib.colors as mcolors
+import pandas as pd
+from scipy.optimize import curve_fit
 
 def plot_unbinned_mle(df):
     """Performs an unbinned ML fit for each E_0 using iminuit and plots the inidividual fits of each E_0 overlaid."""
-
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.8, 4.8))
 
@@ -93,6 +94,24 @@ def plot_unbinned_mle(df):
     
     fig.tight_layout()
 
-    return fit_results, fig
+    ### converting to pandas df format ###
+    energies = sorted(fit_results.keys())
+    
+    #extract values into lists
+    mus = [fit_results[e]['mu'][0] for e in energies]
+    mu_errs = [fit_results[e]['mu'][1] for e in energies]
+    sigmas = [fit_results[e]['sigma'][0] for e in energies]
+    sigma_errs = [fit_results[e]['sigma'][1] for e in energies]
+    
+    #convert to pandas series
+    s_mu = pd.Series(mus, index=energies)
+    s_mu_err = pd.Series(mu_errs, index=energies)
+    s_sigma = pd.Series(sigmas, index=energies)
+    s_sigma_err = pd.Series(sigma_errs, index=energies)
+    
+    #fold into a tuple
+    values = (s_mu, s_mu_err, s_sigma, s_sigma_err)
+
+    return values, fig
     
 

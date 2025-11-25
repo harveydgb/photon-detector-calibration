@@ -23,7 +23,7 @@ def plot_total_hist(df):
     diff = df['E_rec'] - df['E_true']
     
     # Plot histogram
-    ax.hist(diff, bins=50, histtype='step')
+    ax.hist(diff, bins=50, histtype='step',color='black')
     ax.set_xlabel(r"$(E - E_0)$ [GeV]")
     ax.set_ylabel('Frequency')
     ax.set_title(r'Distribution of all $E - E_0$')
@@ -79,14 +79,14 @@ def plot_sample_estimates(df):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.8, 4.8))
     
     #samples mean
-    ax1.errorbar(mu_samp.index, mu_samp, yerr=mu_error, fmt='o', capsize=4)
+    ax1.errorbar(mu_samp.index, mu_samp, yerr=mu_error, fmt='o', capsize=4,color='black')
     ax1.set_xlabel(r"$E_0$ [GeV]")
     ax1.set_ylabel(r"Mean Energy $\hat{\mu}_{\rm samp}$ [GeV]")
     ax1.set_title(r"Sample Mean vs $E_0$")
     ax1.grid(True, linestyle='--', alpha=0.5)
     
     #sample standard deviation
-    ax2.errorbar(sigma_samp.index, sigma_samp, yerr=sigma_error, fmt='o', capsize=4)
+    ax2.errorbar(sigma_samp.index, sigma_samp, yerr=sigma_error, fmt='o', capsize=4,color='black')
     ax2.set_xlabel(r"$E_0$ [GeV]")
     ax2.set_ylabel(r"Standard Deviation $\hat{\sigma}_{\rm samp}$ [GeV]")
     ax2.set_title(r"Sample Standard Deviation vs $E_0$")
@@ -159,8 +159,6 @@ def plot_fitted_sample_estimates(values, n_boot=1000):
     fitted_sigma = (sigma_func(x_arr, *sigma_params) / x_arr)
 
 
-
-
     ### plotting samples and fitted curves ###
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.8, 4.8))
@@ -168,7 +166,7 @@ def plot_fitted_sample_estimates(values, n_boot=1000):
     #mean plot
     mu_samp_scaled = mu_samp.values - mu_samp.index.values
     
-    ax1.errorbar(mu_samp.index.values, mu_samp_scaled, yerr=mu_error.values, fmt='o', label='Data', capsize=4)
+    ax1.errorbar(mu_samp.index.values, mu_samp_scaled, yerr=mu_error.values, fmt='o', label='Data', capsize=4,color='black')
     ax1.plot(x_arr, fitted_mean, 'r-', label='Fit')
     ax1.fill_between(x_arr, fitted_mean - mean_std, fitted_mean + mean_std, color='r', alpha=0.3, label=r'$\pm 1\sigma$ Band')
     
@@ -182,7 +180,7 @@ def plot_fitted_sample_estimates(values, n_boot=1000):
     sigma_samp_scaled = sigma_samp.values / sigma_samp.index.values
     sigma_err_scaled = sigma_error.values / sigma_samp.index.values
     
-    ax2.errorbar(sigma_samp.index.values, sigma_samp_scaled, yerr=sigma_err_scaled, fmt='o', label='Data', capsize=4)
+    ax2.errorbar(sigma_samp.index.values, sigma_samp_scaled, yerr=sigma_err_scaled, fmt='o', label='Data', capsize=4,color='black')
     ax2.plot(x_arr, fitted_sigma, 'r-', label='Fit')
     ax2.fill_between(x_arr, fitted_sigma - sigma_std, fitted_sigma + sigma_std, color='r', alpha=0.3, label=r'$\pm 1\sigma$ Band')
 
@@ -225,4 +223,6 @@ def update_results_json(results, section, filepath='../results.json'):
     #saving
     with open(filepath, 'w') as f:
         json.dump(data, f, indent=4)
+
+    print("Saved to 'results.json'")
 
