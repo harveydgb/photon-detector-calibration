@@ -108,7 +108,7 @@ def plot_fitted_sample_estimates(values, n_boot=1000):
         return lam * E_0 + delta
 
     def sigma_func(E_0, a, b, c):
-        return ((E_0 * (a**2)) + (b**2) + ((E_0**2) * (c**2)))**0.5
+        return np.sqrt(np.abs((E_0 * (a**2)) + (b**2) + ((E_0**2) * (c**2))))
 
     #fitting mean
     mean_params, mean_params_cov = curve_fit(mean_func, mu_samp.index.values, mu_samp.values, sigma = mu_error.values, absolute_sigma=True)
@@ -192,7 +192,7 @@ def plot_fitted_sample_estimates(values, n_boot=1000):
     
     fig.tight_layout()
 
-    #saving results to json file
+    #saving and returning results in a dictionary
     results = {
         "lb": (mean_params[0], mean_params_error[0]),
         "dE": (mean_params[1], mean_params_error[1]),
@@ -210,15 +210,11 @@ def update_results_json(results, section, filepath='../results.json'):
     #opening
     with open(filepath, 'r') as f:
         data = json.load(f)
-    
-    print(data)
 
     #entering data
     for key, (val, err) in results.items():
         data[section]["values"][key] = float(val)
         data[section]["errors"][key] = float(err)
-
-    print(data)
 
     #saving
     with open(filepath, 'w') as f:
