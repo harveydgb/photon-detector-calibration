@@ -58,41 +58,41 @@ def plot_overlapping_hist(df):
     return fig, ax
 
 # Question 1) (iii)
-def plot_sample_estimates(df):
-    """
-    Calculating and plotting the samples estimates and associated estimated 
-    errors of the mean and standard deviation.
-    """
+# def plot_sample_estimates(df):
+#     """
+#     Calculating and plotting the samples estimates and associated estimated 
+#     errors of the mean and standard deviation.
+#     """
     
-    grouped = df.groupby('E_true')['E_rec']
+#     grouped = df.groupby('E_true')['E_rec']
 
-    #calculating samples values and associated errors
-    mu_samp = grouped.mean()
-    sigma_samp = grouped.std(ddof=1)
-    N = grouped.count()
+#     #calculating samples values and associated errors
+#     mu_samp = grouped.mean()
+#     sigma_samp = grouped.std(ddof=1)
+#     N = grouped.count()
 
-    mu_error = sigma_samp/ (N ** 0.5)
-    sigma_error = sigma_samp/( (2*(N-1)) ** 0.5)
+#     mu_error = sigma_samp/ (N ** 0.5)
+#     sigma_error = sigma_samp/( (2*(N-1)) ** 0.5)
 
     
-    #plotting subplots
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.8, 4.8))
+#     #plotting subplots
+#     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.8, 4.8))
     
-    #samples mean
-    ax1.errorbar(mu_samp.index, mu_samp, yerr=mu_error, fmt='o', capsize=4,color='black')
-    ax1.set_xlabel(r"$E_0$ [GeV]")
-    ax1.set_ylabel(r"Mean Energy $\hat{\mu}_{\rm samp}$ [GeV]")
-    ax1.set_title(r"Sample Mean vs $E_0$")
-    ax1.grid(True, linestyle='--', alpha=0.5)
+#     #samples mean
+#     ax1.errorbar(mu_samp.index, mu_samp, yerr=mu_error, fmt='o', capsize=4,color='black')
+#     ax1.set_xlabel(r"$E_0$ [GeV]")
+#     ax1.set_ylabel(r"Mean Energy $\hat{\mu}_{\rm samp}$ [GeV]")
+#     ax1.set_title(r"Sample Mean vs $E_0$")
+#     ax1.grid(True, linestyle='--', alpha=0.5)
     
-    #sample standard deviation
-    ax2.errorbar(sigma_samp.index, sigma_samp, yerr=sigma_error, fmt='o', capsize=4,color='black')
-    ax2.set_xlabel(r"$E_0$ [GeV]")
-    ax2.set_ylabel(r"Standard Deviation $\hat{\sigma}_{\rm samp}$ [GeV]")
-    ax2.set_title(r"Sample Standard Deviation vs $E_0$")
-    ax2.grid(True, linestyle='--', alpha=0.5)
+#     #sample standard deviation
+#     ax2.errorbar(sigma_samp.index, sigma_samp, yerr=sigma_error, fmt='o', capsize=4,color='black')
+#     ax2.set_xlabel(r"$E_0$ [GeV]")
+#     ax2.set_ylabel(r"Standard Deviation $\hat{\sigma}_{\rm samp}$ [GeV]")
+#     ax2.set_title(r"Sample Standard Deviation vs $E_0$")
+#     ax2.grid(True, linestyle='--', alpha=0.5)
     
-    return fig, (ax1, ax2), (mu_samp,mu_error, sigma_samp, sigma_error)
+#     return fig, (mu_samp, mu_error, sigma_samp, sigma_error)
 
 # Question 1) (iv)
 def plot_fitted_sample_estimates(values, n_boot=1000):
@@ -127,6 +127,14 @@ def plot_fitted_sample_estimates(values, n_boot=1000):
     print(f"b = {sigma_params[1]:.3f} ± {sigma_params_error[1]:.3f}")
     print(f"c = {sigma_params[2]:.3f} ± {sigma_params_error[2]:.3f} \n")
 
+    #saving and returning results in a dictionary
+    results = {
+        "lb": (mean_params[0], mean_params_error[0]),
+        "dE": (mean_params[1], mean_params_error[1]),
+        "a":  (sigma_params[0], sigma_params_error[0]),
+        "b":  (sigma_params[1], sigma_params_error[1]),
+        "c":  (sigma_params[2], sigma_params_error[2]),
+    }
 
     ### calculating error bands by bootstrapping ###
 
@@ -192,15 +200,6 @@ def plot_fitted_sample_estimates(values, n_boot=1000):
     
     fig.tight_layout()
 
-    #saving and returning results in a dictionary
-    results = {
-        "lb": (mean_params[0], mean_params_error[0]),
-        "dE": (mean_params[1], mean_params_error[1]),
-        "a":  (sigma_params[0], sigma_params_error[0]),
-        "b":  (sigma_params[1], sigma_params_error[1]),
-        "c":  (sigma_params[2], sigma_params_error[2]),
-    }
-
     return results, fig
 
 def update_results_json(results, section, filepath='../results.json'):
@@ -222,4 +221,133 @@ def update_results_json(results, section, filepath='../results.json'):
 
     print("Saved to 'results.json'")
 
-def 
+
+
+
+
+
+
+###### Sectioned up #########
+
+## 1) (iii) plan ##
+def calculate_sample_estimates(df):
+    """
+    Calculating the samples estimates and associated estimated 
+    errors of the mean and standard deviation.
+    """
+    
+    grouped = df.groupby('E_true')['E_rec']
+
+    #calculating samples values and associated errors
+    mu_samp = grouped.mean()
+    sigma_samp = grouped.std(ddof=1)
+    N = grouped.count()
+
+    mu_error = sigma_samp/ (N ** 0.5)
+    sigma_error = sigma_samp/( (2*(N-1)) ** 0.5)
+
+    return (mu_samp, mu_error, sigma_samp, sigma_error)
+
+
+def plot_sample_estimates(sample_estimate_values):
+    """Takes samples estimate values and plots on two separate histograms.
+    Returns fig."""
+
+    #unpacking
+    mu_samp, mu_error, sigma_samp, sigma_error = sample_estimate_values
+
+    #plotting subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.8, 4.8))
+    
+    #samples mean
+    ax1.errorbar(mu_samp.index, mu_samp, yerr=mu_error, fmt='o', capsize=4,color='black')
+    ax1.set_xlabel(r"$E_0$ [GeV]")
+    ax1.set_ylabel(r"Mean Energy $\hat{\mu}_{\rm samp}$ [GeV]")
+    ax1.set_title(r"Sample Mean vs $E_0$")
+    ax1.grid(True, linestyle='--', alpha=0.5)
+    
+    #sample standard deviation
+    ax2.errorbar(sigma_samp.index, sigma_samp, yerr=sigma_error, fmt='o', capsize=4,color='black')
+    ax2.set_xlabel(r"$E_0$ [GeV]")
+    ax2.set_ylabel(r"Standard Deviation $\hat{\sigma}_{\rm samp}$ [GeV]")
+    ax2.set_title(r"Sample Standard Deviation vs $E_0$")
+    ax2.grid(True, linestyle='--', alpha=0.5)
+
+    return fig
+
+def calculate_and_plot_sample_estimates(df):
+    
+    sample_estimate_values = calculate_sample_estimates(df)
+    fig = plot_sample_estimates(sample_estimate_values)
+
+    return fig, sample_estimate_values
+
+
+
+## 1) (iv) plan ##
+
+def mean_func(E_0, lam, delta):
+    return lam * E_0 + delta
+
+def sigma_func(E_0, a, b, c):
+    return np.sqrt(np.abs((E_0 * (a**2)) + (b**2) + ((E_0**2) * (c**2))))
+
+def least_squares_fit(sample_estimate_values):
+    """Uses least squares to fit the mean_func and sigma_func to the sample
+    mean and standard deviation data calculated from the raw data.
+
+    Inputs
+    sample_estimate_values: tuple in form of (mu_samp, mu_error, sigma_samp, sigma_error)
+    Returns
+    results: dictionary of parameter results"""
+
+    #unpacking values
+    mu_samp, mu_error, sigma_samp, sigma_error = sample_estimate_values
+
+    #fitting mean
+    mean_params, mean_params_cov = curve_fit(mean_func, mu_samp.index.values, mu_samp.values, sigma = mu_error.values, absolute_sigma=True)
+    mean_params_error = np.sqrt(np.diag(mean_params_cov))
+
+    #fitting standard deviation
+    p0_sig = [0.5, 1, 0.01] 
+    sigma_params, sigma_params_cov = curve_fit(sigma_func, sigma_samp.index.values, sigma_samp.values, sigma=sigma_error.values, p0 = p0_sig, absolute_sigma=True)
+    sigma_params_error = np.sqrt(np.diag(sigma_params_cov))
+
+    #storing parameter results in a dictionary
+    param_results = {
+        "lb": (mean_params[0], mean_params_error[0]),
+        "dE": (mean_params[1], mean_params_error[1]),
+        "a":  (sigma_params[0], sigma_params_error[0]),
+        "b":  (sigma_params[1], sigma_params_error[1]),
+        "c":  (sigma_params[2], sigma_params_error[2]),
+    }
+
+    return param_results
+
+def print_and_save_results(param_results, section, filepath='../results.json'):
+    """Prints and saves the results of the calculated parameters to 
+    results.json file.
+    Inputs
+    param_results: dictionary of parameter values
+    section: name of the fit used to calculate params"""
+    
+    #printing out fitted values
+    print("Fitted parameter values:")
+    print(f"λ = {param_results['lb'][0]:.3f} ± {param_results['lb'][1]:.3f}")
+    print(f"Δ = {param_results['dE'][0]:.3f} ± {param_results['dE'][1]:.3f}")
+    print(f"a = {param_results['a'][0]:.3f} ± {param_results['a'][1]:.3f}")
+    print(f"b = {param_results['b'][0]:.3f} ± {param_results['b'][1]:.3f}")
+    print(f"c = {param_results['c'][0]:.3f} ± {param_results['c'][1]:.3f} \n")
+
+def bootstrap(sample_estimate_values, n_boot=1000):
+    """Continue here!"""
+
+    mu_samp, mu_error, sigma_samp, sigma_error = sample_estimate_values
+
+    pass
+
+def plot_mean_var():
+    pass
+
+def least_squares_fit_and_plot():
+    pass
