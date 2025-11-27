@@ -286,8 +286,8 @@ def calculate_and_plot_sample_estimates(df):
 
 ## 1) (iv) plan ##
 
-def mean_func(E_0, lam, delta):
-    return lam * E_0 + delta
+def mean_func(E_0, lb, dE):
+    return lb * E_0 + dE
 
 def sigma_func(E_0, a, b, c):
     return np.sqrt(np.abs((E_0 * (a**2)) + (b**2) + ((E_0**2) * (c**2))))
@@ -328,7 +328,7 @@ def print_and_save_results(param_results, section, filepath='../results.json'):
     """Prints and saves the results of the calculated parameters to 
     results.json file.
     Inputs
-    param_results: dictionary of parameter values
+    param_results: dictionary of fit parameter values
     section: name of the fit used to calculate params"""
     
     #printing out fitted values
@@ -339,15 +339,94 @@ def print_and_save_results(param_results, section, filepath='../results.json'):
     print(f"b = {param_results['b'][0]:.3f} ± {param_results['b'][1]:.3f}")
     print(f"c = {param_results['c'][0]:.3f} ± {param_results['c'][1]:.3f} \n")
 
-def bootstrap(sample_estimate_values, n_boot=1000):
-    """Continue here!"""
+def calculate_error_bands_by_bootstrap(sample_estimate_values, param_results, x_arr, n_boot=1000):
+    """Calculating the 1 sigma error bands of the fit using parametric 
+    bootstrapping across the E_0 sample range. y-values are re-scaled 
+    to (mu - E_0) and (sigma / E_0)
+    
+    Inputs
+    sample_estimate_values: tuple in form of (mu_samp, mu_error, sigma_samp, sigma_error)
+    param_results: dictionary of fit parameter values
+    x_arr: array of smooth x_values across the E_0 value range
+    
+    Returns
+    mean_std: array of boostrap derived standard devations of the fit at each E_0 value
+    sigma_std: array of boostrap derived standard devations of the fit at each E_0 value 
+    """
 
+    #unpacking values
     mu_samp, mu_error, sigma_samp, sigma_error = sample_estimate_values
 
-    pass
 
-def plot_mean_var():
-    pass
+    boot_mean_curves = []
+    boot_sigma_curves = []
+
+    #parametric bootstrapping
+    for i in range(n_boot):
+        #creating resamples
+        mu_resamp = np.random.normal(mu_samp.values, mu_error.values)
+        sigma_resamp = np.random.normal(sigma_samp.values, sigma_error.values)
+
+        #fitting
+        boot_mean_params, _ = curve_fit(mean_func, mu_samp.index.values, mu_resamp, sigma = mu_error.values, absolute_sigma=True)
+        boot_sigma_params, _ = curve_fit(sigma_func, sigma_samp.index.values, sigma_resamp, sigma=sigma_error.values, p0 = p0_sig, absolute_sigma=True)
+
+        #saving to list
+        boot_mean_curves.append(mean_func(x_arr, *boot_mean_params) - x_arr)
+        boot_sigma_curves.append(sigma_func(x_arr, *boot_sigma_params) / x_arr)
+
+    #calculating std. deviations across each E_0 for both mean and sigma using boostrap resample curves
+    mean_std = np.std(boot_mean_curves,axis=0)
+    sigma_std = np.std(boot_sigma_curves,axis=0)
+
+    return mean_std, sigma_std
+
+def plot_mean_var(sample_estimate_values, x_arr, mean_std, sigma_std, fitted_mean, fitted_sigma):
+    """Plots the """
+    #unpacking values
+    mu_samp, mu_error, sigma_samp, sigma_error = sample_estimate_values
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.8, 4.8))
+
+    #mean plot
+    mu_samp_scaled = mu_samp.values - mu_samp.index.values
+    
+    ax1.errorbar(mu_samp.index.values, mu_samp_scaled, yerr=mu_error.values, fmt='o', label='Data', capsize=4,color='black')
+    ax1.plot(x_arr, fitted_mean, 'r-', label='Fit')
+    ax1.fill_between(x_arr, fitted_mean - mean_std, fitted_mean + mean_std, color='r', alpha=0.3, label=r'$\pm 1\sigma$ Band')
+    
+    ax1.set_xlabel(r"$E_0$ [GeV]")
+    ax1.set_ylabel(r"$\hat{\mu}_{\rm samp} - E_0$ [GeV]")
+    ax1.set_title("Linearity Check")
+    ax1.legend()
+    ax1.grid(True, linestyle='--', alpha=0.5)
+
+    #sigma plot
+    sigma_samp_scaled = sigma_samp.values / sigma_samp.index.values
+    sigma_err_scaled = sigma_error.values / sigma_samp.index.values
+    
+    ax2.errorbar(sigma_samp.index.values, sigma_samp_scaled, yerr=sigma_err_scaled, fmt='o', label='Data', capsize=4,color='black')
+    ax2.plot(x_arr, fitted_sigma, 'r-', label='Fit')
+    ax2.fill_between(x_arr, fitted_sigma - sigma_std, fitted_sigma + sigma_std, color='r', alpha=0.3, label=r'$\pm 1\sigma$ Band')
+
+    ax2.set_xlabel(r"$E_0$ [GeV]")
+    ax2.set_ylabel(r"$\hat{\sigma}_{\rm samp} / E_0$")
+    ax2.set_title("Fractional Resolution")
+    ax2.legend()
+    ax2.grid(True, linestyle='--', alpha=0.5)
+    
+    fig.tight_layout()
+
+    return fig
+
 
 def least_squares_fit_and_plot():
+
+
+    #creating x array to sample y values over
+    x_arr = np.linspace(min(mu_samp.index.values), max(mu_samp.index.values), 200)
+    
+    #creating y values for fitted curves
+    fitted_mean = (mean_func(x_arr, param_results['lb'][0], param_results['dE'][0]) - x_arr)
+    fitted_sigma = (sigma_func(x_arr, param_results['a'][0], param_results['b'][0], param_results['c'][0]) / x_arr)
     pass
