@@ -11,26 +11,6 @@ import os
 import matplotlib.cm as cm      
 import matplotlib.colors as mcolors
 
-# remove this #
-def update_results_json(results, section, filepath='../results.json'):
-    """
-    Updates a section in the results.json file with the results file passed.
-    """
-    #opening
-    with open(filepath, 'r') as f:
-        data = json.load(f)
-
-    #entering data
-    for key, (val, err) in results.items():
-        data[section]["values"][key] = float(val)
-        data[section]["errors"][key] = float(err)
-
-    #saving
-    with open(filepath, 'w') as f:
-        json.dump(data, f, indent=4)
-
-    print("Saved to 'results.json'")
-
 # Question 1) (i)
 def plot_total_hist(df):
     """
@@ -55,6 +35,12 @@ def plot_overlapping_hist(df):
     """
     Plotting overlapping histograms of each set of (E - E_0) across each of 
     the E_0 values
+
+    Inputs
+    df: pandas dataframe of all detector measurements.
+
+    Returns
+    fig: figure of overlappping distributions
     """
     
     fig, ax = plt.subplots(figsize=(6.4, 4.8))
@@ -75,13 +61,18 @@ def plot_overlapping_hist(df):
     ax.set_title(r'Distribution of $E - E_0$ for each $E_0$')
     ax.legend()
     
-    return fig, ax
+    return fig
 
 # Question 1) (iii)
 def calculate_sample_estimates(df):
     """
     Calculating the samples estimates and associated estimated 
     errors of the mean and standard deviation.
+    Inputs
+    df: pandas dataframe of all detector measurements.
+
+    Returns
+    sample_estimate_values: tuple in form of (mu_samp, mu_error, sigma_samp, sigma_error)
     """
     
     grouped = df.groupby('E_true')['E_rec']
@@ -94,11 +85,18 @@ def calculate_sample_estimates(df):
     mu_error = sigma_samp/ (N ** 0.5)
     sigma_error = sigma_samp/( (2*(N-1)) ** 0.5)
 
-    return (mu_samp, mu_error, sigma_samp, sigma_error)
+    sample_estimate_values = (mu_samp, mu_error, sigma_samp, sigma_error)
+    return sample_estimate_values
 
 def plot_sample_estimates(sample_estimate_values):
     """Takes samples estimate values and plots on two separate histograms.
-    Returns fig."""
+    Returns fig.
+    
+    Inputs
+    sample_estimate_values: tuple in form of (mu_samp, mu_error, sigma_samp, sigma_error)
+    
+    Returns
+    fig: plots of mean and standard deviation of energy measurements."""
 
     #unpacking
     mu_samp, mu_error, sigma_samp, sigma_error = sample_estimate_values
@@ -142,7 +140,7 @@ def least_squares_fit(sample_estimate_values):
     mean and standard deviation data calculated from the raw data.
 
     Inputs
-    sample_estimate_values: tuple in form of (mu_samp, mu_error, sigma_samp, sigma_error)
+    df: pandas dataframe of all detector measurements.
     Returns
     results: dictionary of parameter results"""
 
@@ -150,13 +148,19 @@ def least_squares_fit(sample_estimate_values):
     mu_samp, mu_error, sigma_samp, sigma_error = sample_estimate_values
 
     #fitting mean
-    mean_params, mean_params_cov = curve_fit(mean_func, mu_samp.index.values, mu_samp.values, sigma = mu_error.values, absolute_sigma=True)
-    mean_params_error = np.sqrt(np.diag(mean_params_cov))
+    mean_params, mean_cov = curve_fit(mean_func, mu_samp.index.values, mu_samp.values, sigma = mu_error.values, absolute_sigma=True)
+    mean_params_error = np.sqrt(np.diag(mean_cov))
 
     #fitting standard deviation
     p0_sig = [0.5, 1, 0.01] #setting sigma param initial values
-    sigma_params, sigma_params_cov = curve_fit(sigma_func, sigma_samp.index.values, sigma_samp.values, sigma=sigma_error.values, p0 = p0_sig, absolute_sigma=True)
-    sigma_params_error = np.sqrt(np.diag(sigma_params_cov))
+    sigma_params, sigma_cov = curve_fit(sigma_func, sigma_samp.index.values, sigma_samp.values, sigma=sigma_error.values, p0 = p0_sig, absolute_sigma=True)
+    sigma_params_error = np.sqrt(np.diag(sigma_cov))
+
+    #merging into one matrix and vector
+    all_params = np.concatenate((mean_params, sigma_params))
+    full_cov = np.zeros((5, 5))
+    full_cov[0:2, 0:2] = mean_cov
+    full_cov[2:5, 2:5] = sigma_cov
 
     #storing parameter results in a dictionary
     param_results = {
@@ -167,14 +171,14 @@ def least_squares_fit(sample_estimate_values):
         "c":  (sigma_params[2], sigma_params_error[2]),
     }
 
-    return param_results
+    return param_results, all_params, full_cov
 
-def print_and_save_results(param_results, section, filepath='../results.json'):
+def print_and_save_results(param_results, fit_type, filepath='../results.json'):
     """Prints and saves the results of the calculated parameters to 
     results.json file.
     Inputs
     param_results: dictionary of fit parameter values
-    section: name of the fit used to calculate params"""
+    fit_type: name of the fit used to calculate params"""
     
     #printing out fitted values
     print("Fitted parameter values:")
@@ -191,8 +195,8 @@ def print_and_save_results(param_results, section, filepath='../results.json'):
 
     #entering data
     for key, (val, err) in param_results.items():
-        data[section]["values"][key] = float(val)
-        data[section]["errors"][key] = float(err)
+        data[fit_type]["values"][key] = float(val)
+        data[fit_type]["errors"][key] = float(err)
 
     #saving
     with open(filepath, 'w') as f:
@@ -200,50 +204,51 @@ def print_and_save_results(param_results, section, filepath='../results.json'):
 
     print("Saved to 'results.json'")
 
-def calculate_error_bands_by_bootstrap(sample_estimate_values, param_results, x_arr, n_boot=1000):
+def calculate_error_bands_by_bootstrap(all_params, full_cov, x_arr, n_boot=1000):
     """Calculating the 1 sigma error bands of the fit using parametric 
-    bootstrapping across the E_0 sample range. y-values are re-scaled 
-    to (mu - E_0) and (sigma / E_0)
+    bootstrapping of the fitted parameter values lambda, delta, a, b and c.
     
     Inputs
-    sample_estimate_values: tuple in form of (mu_samp, mu_error, sigma_samp, sigma_error)
-    param_results: dictionary of fit parameter values
+    all_params: fitted parameters for mean and sigma
+    full_cov: covariance matrix for mu and sigma parameters
     x_arr: array of smooth x_values across the E_0 value range
     
     Returns
-    mean_std: array of boostrap derived standard devations of the fit at each E_0 value
-    sigma_std: array of boostrap derived standard devations of the fit at each E_0 value 
+    mean_fit_error_band: array of boostrap derived standard devations of the fit at each E_0 value
+    sigma_fit_error_band: array of boostrap derived standard devations of the fit at each E_0 value 
     """
 
-    #unpacking values
-    mu_samp, mu_error, sigma_samp, sigma_error = sample_estimate_values
+    rng = np.random.default_rng()
+
+    #creating n_boots sets of sample parameters from multivariate normal dist
+    boot_params = rng.multivariate_normal(all_params, full_cov, size=n_boot)
 
     #initialising
     boot_mean_curves = []
     boot_sigma_curves = []
-    p0_sig = [0.5, 1, 0.01] #setting sigma param initial values
 
     #parametric bootstrapping
     for i in range(n_boot):
-        #creating resamples
-        mu_resamp = np.random.normal(mu_samp.values, mu_error.values)
-        sigma_resamp = np.random.normal(sigma_samp.values, sigma_error.values)
+        sample = boot_params[i]
 
-        #fitting
-        boot_mean_params, _ = curve_fit(mean_func, mu_samp.index.values, mu_resamp, sigma = mu_error.values, absolute_sigma=True)
-        boot_sigma_params, _ = curve_fit(sigma_func, sigma_samp.index.values, sigma_resamp, sigma=sigma_error.values, p0 = p0_sig, absolute_sigma=True)
+        #extracting i'th value
+        lb_i, dE_i = sample[0:2]
+        a_i, b_i, c_i = sample[2:5]
 
-        #saving to list
-        boot_mean_curves.append(mean_func(x_arr, *boot_mean_params) - x_arr)
-        boot_sigma_curves.append(sigma_func(x_arr, *boot_sigma_params) / x_arr)
+        #scaling y values
+        y_mean_i = mean_func(x_arr, lb_i, dE_i) - x_arr
+        y_sigma_i = sigma_func(x_arr, a_i, b_i, c_i) / x_arr
 
-    #calculating std. deviations across each E_0 for both mean and sigma using boostrap resample curves
-    mean_std = np.std(boot_mean_curves,axis=0)
-    sigma_std = np.std(boot_sigma_curves,axis=0)
+        boot_mean_curves.append(y_mean_i)
+        boot_sigma_curves.append(y_sigma_i)
 
-    return mean_std, sigma_std
+    #calculating error band
+    mean_fit_error_band = np.std(boot_mean_curves, axis=0)
+    sigma_fit_error_band = np.std(boot_sigma_curves, axis=0)
 
-def plot_mean_sigma_fit_with_error_bars(sample_estimate_values, param_results, x_arr, mean_std, sigma_std):
+    return mean_fit_error_band, sigma_fit_error_band
+
+def plot_mean_sigma_fit_with_error_bars(param_results, x_arr, mean_fit_error_band, sigma_fit_error_band, sample_estimate_values=None):
     """Plots two graphs for the mu and sigma values, eaching showing the actual
     mean and std. dev from E_0, as well the line of best fit, and associated error
     bands for that fit.
@@ -252,45 +257,47 @@ def plot_mean_sigma_fit_with_error_bars(sample_estimate_values, param_results, x
     sample_estimate_values: tuple in form of (mu_samp, mu_error, sigma_samp, sigma_error)
     param_results: dictionary of fit parameter values
     x_arr: array of smooth x_values across the E_0 value range
-    mean_std: array of uncertainty values for the mean fit at each E_0 value
-    mean_std: array of uncertainty values for the sigma fit at each E_0 value
+    mean_fit_error_band: array of uncertainty values for the mean fit at each E_0 value
+    sigma_fit_error_band: array of uncertainty values for the sigma fit at each E_0 value
     
     Returns
     fig: the matplotlib figure object, for purposes of saving the image
     """
     
-    #unpacking values
-    mu_samp, mu_error, sigma_samp, sigma_error = sample_estimate_values
-
     #creating y values for fitted curves from param results
     fitted_mean = (mean_func(x_arr, param_results['lb'][0], param_results['dE'][0]) - x_arr)
     fitted_sigma = (sigma_func(x_arr, param_results['a'][0], param_results['b'][0], param_results['c'][0]) / x_arr)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.8, 4.8))
 
-    #mean plot
-    mu_samp_scaled = mu_samp.values - mu_samp.index.values
+    #plotting sample estimates of mu and sigma if passed
+    if sample_estimate_values != None:
+        
+        #unpacking values
+        mu_samp, mu_error, sigma_samp, sigma_error = sample_estimate_values
+
+        #mean plot
+        mu_samp_scaled = mu_samp.values - mu_samp.index.values
+        ax1.errorbar(mu_samp.index.values, mu_samp_scaled, yerr=mu_error.values, fmt='o', label='Data', capsize=4,color='black')
+        #sigma plot
+        sigma_samp_scaled = sigma_samp.values / sigma_samp.index.values
+        sigma_err_scaled = sigma_error.values / sigma_samp.index.values
+        ax2.errorbar(sigma_samp.index.values, sigma_samp_scaled, yerr=sigma_err_scaled, fmt='o', label='Data', capsize=4,color='black')
     
-    ax1.errorbar(mu_samp.index.values, mu_samp_scaled, yerr=mu_error.values, fmt='o', label='Data', capsize=4,color='black')
     ax1.plot(x_arr, fitted_mean, 'r-', label='Fit')
-    ax1.fill_between(x_arr, fitted_mean - mean_std, fitted_mean + mean_std, color='r', alpha=0.3, label=r'$\pm 1\sigma$ Band')
+    ax1.fill_between(x_arr, fitted_mean - mean_fit_error_band, fitted_mean + mean_fit_error_band, color='r', alpha=0.3, label=r'$\pm 1\sigma$ Band')
     
     ax1.set_xlabel(r"$E_0$ [GeV]")
-    ax1.set_ylabel(r"$\hat{\mu}_{\rm samp} - E_0$ [GeV]")
+    ax1.set_ylabel(r"$\hat{\mu}_{\rm} - E_0$ [GeV]")
     ax1.set_title("Linearity Check")
     ax1.legend()
     ax1.grid(True, linestyle='--', alpha=0.5)
 
-    #sigma plot
-    sigma_samp_scaled = sigma_samp.values / sigma_samp.index.values
-    sigma_err_scaled = sigma_error.values / sigma_samp.index.values
-    
-    ax2.errorbar(sigma_samp.index.values, sigma_samp_scaled, yerr=sigma_err_scaled, fmt='o', label='Data', capsize=4,color='black')
     ax2.plot(x_arr, fitted_sigma, 'r-', label='Fit')
-    ax2.fill_between(x_arr, fitted_sigma - sigma_std, fitted_sigma + sigma_std, color='r', alpha=0.3, label=r'$\pm 1\sigma$ Band')
+    ax2.fill_between(x_arr, fitted_sigma - sigma_fit_error_band, fitted_sigma + sigma_fit_error_band, color='r', alpha=0.3, label=r'$\pm 1\sigma$ Band')
 
     ax2.set_xlabel(r"$E_0$ [GeV]")
-    ax2.set_ylabel(r"$\hat{\sigma}_{\rm samp} / E_0$")
+    ax2.set_ylabel(r"$\hat{\sigma}_{\rm} / E_0$")
     ax2.set_title("Fractional Resolution")
     ax2.legend()
     ax2.grid(True, linestyle='--', alpha=0.5)
@@ -299,7 +306,7 @@ def plot_mean_sigma_fit_with_error_bars(sample_estimate_values, param_results, x
 
     return fig
 
-def least_squares_fit_and_plot(sample_estimate_values):
+def least_squares_fit_and_plot(sample_estimate_values, fit_type):
     """Applies a least squares to fit of the associated functions to the sample 
     estimate values. Then applies bootstrapping to calculate error bands for the 
     fit at each E_0 value. Plots all of this information onto two graphs, one for
@@ -307,25 +314,25 @@ def least_squares_fit_and_plot(sample_estimate_values):
     
     Inputs
     sample_estimate_values: tuple in form of (mu_samp, mu_error, sigma_samp, sigma_error)
-    
+    fit_type: name of the fit used to calculate params
+
     Returns
     fig: the matplotlib figure object, for purposes of saving the image
     """
 
-    #unpacking
-    mu_samp, mu_error, sigma_samp, sigma_error = sample_estimate_values
-
     #applying least squares fit to functions 
-    param_results = least_squares_fit(sample_estimate_values)
-    print_and_save_results(param_results, "sample_ests", filepath='../results.json')
+    param_results, all_params, full_cov = least_squares_fit(sample_estimate_values)
+
+    #saving parameter results
+    print_and_save_results(param_results, fit_type, filepath='../results.json')
 
     #creating x array to sample y values over
-    x_arr = np.linspace(min(mu_samp.index.values), max(mu_samp.index.values), 200)
+    x_arr = np.linspace(20, 80, 200)
 
     #appling bootstrapping and saving sigma values
-    mean_std, sigma_std = calculate_error_bands_by_bootstrap(sample_estimate_values, param_results, x_arr)
+    mean_fit_error_band, sigma_fit_error_band = calculate_error_bands_by_bootstrap(all_params, full_cov, x_arr)
 
     #plotting
-    fig = plot_mean_sigma_fit_with_error_bars(sample_estimate_values, param_results, x_arr, mean_std, sigma_std)
+    fig = plot_mean_sigma_fit_with_error_bars(param_results, x_arr, mean_fit_error_band, sigma_fit_error_band, sample_estimate_values=sample_estimate_values)
     
     return fig
