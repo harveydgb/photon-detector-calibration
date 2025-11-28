@@ -7,6 +7,7 @@ import json
 from s1_sol import q1, q2, q3
 
 # Question 4) (i)
+
 def run_entire_sample_bootstrap(df, n_boot=2500):
     """
     """
@@ -28,24 +29,93 @@ def run_entire_sample_bootstrap(df, n_boot=2500):
         # 1) samples estimate least squares fit
         ls_vals = q1.calculate_sample_estimates(df_resampled)
         ls_params, _, _ = q1.least_squares_fit(ls_vals)
+
+        #storing results
+        for key in boot_results['sample_ests']:
+            boot_results['sample_ests'][key].append(ls_params[key][0])
         
+
         # 2) individual mle fits
         ind_mle_vals = q2.unbinned_mle(df_resampled)
         ind_mle_params, _, _ = q1.least_squares_fit(ind_mle_vals)
 
+        #storing results
+        for key in boot_results['individual_fits']:
+            boot_results['individual_fits'][key].append(ind_mle_params[key][0])
+
+
         # 3) simultaneous mle fits
-
-        # Store LS results
-        for key in boot_results['sample_ests']:
-            boot_results['sample_ests'][key].append(ls_res[key][0]) # [0] is value, [1] is error
-
-        # --- Method 2: Q3 Simultaneous MLE ---
-        # 1. Direct fit on resampled data
-        sim_res, _, _ = fit_unbinned_mle_simultaneous(df_resampled)
+        sim_mle_params, _, _ = q3.fit_unbinned_mle_simultaneous(df_resampled)
         
-        # Store Sim results
+        #storing results
         for key in boot_results['simultaneous_fit']:
-            boot_results['simultaneous_fit'][key].append(sim_res[key][0])
+            boot_results['simultaneous_fit'][key].append(sim_mle_params[key][0])
                 
-
     return boot_results
+
+def plot_bootstrap_histograms(boot_results):
+    """
+    """
+    
+    #setting layout and labels
+    fig, ax = plt.subplots(2, 3, figsize=(19.2, 9.6))
+    
+    layout_map = {
+        'lb': (0, 0),
+        'dE': (0, 1),
+        'a':  (1, 0),
+        'b':  (1, 1),
+        'c':  (1, 2)
+    }
+    
+    x_labels = {
+        'lb': r"$\lambda$",
+        'dE': r"$\Delta$ [GeV]",
+        'a':  r"$a$ [GeV$^{1/2}$]",
+        'b':  r"$b$ [GeV]",
+        'c':  r"$c$"
+    }
+
+    #method styles
+    methods = ['sample_ests', 'individual_fits', 'simultaneous_fit']
+    method_labels = ['Sample Stats (Q1)', 'Individual MLE (Q2)', 'Simultaneous (Q3)']
+    colors = ['black', 'blue', 'red']
+
+    #plotting, loop across each graph
+    for param, (row, col) in layout_map.items():
+        axis = ax[row, col]
+        
+        #plotting loop for each method
+        for i, method in enumerate(methods):
+            if method in boot_results and param in boot_results[method]:
+                data = np.array(boot_results[method][param])
+                
+                #plotting histogram - CHANGED HERE
+                # Changed to 'stepfilled' and added alpha for transparency/overlap
+                axis.hist(data, bins=50, histtype='stepfilled', density=True, 
+                          color=colors[i], label=method_labels[i], alpha=0.4)
+                
+                # Optional: Add faint vertical line for the mean
+                axis.axvline(np.mean(data), color=colors[i], linestyle='--', alpha=0.3)
+
+        #labelling
+        axis.set_xlabel(x_labels[param], fontsize=14)
+        axis.set_ylabel("Probability Density")
+        
+        #only adding legen to one plot
+        if row == 0 and col == 0:
+            axis.legend(loc='upper right', frameon=False)
+
+    #hiding top-right graph
+    ax[0, 2].set_visible(False)
+    
+    fig.tight_layout()
+    
+    return fig
+
+def boot_and_plot_hists_all_methods(df, n_boot=2500):
+    """"""
+    boot_results = run_entire_sample_bootstrap(df, n_boot=n_boot)
+    fig = plot_bootstrap_histograms(boot_results)
+
+    return fig
