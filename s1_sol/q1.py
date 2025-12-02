@@ -278,11 +278,11 @@ def plot_mean_sigma_fit_with_error_bars(param_results, x_arr, mean_fit_error_ban
 
         #mean plot
         mu_samp_scaled = mu_samp.values - mu_samp.index.values
-        ax1.errorbar(mu_samp.index.values, mu_samp_scaled, yerr=mu_error.values, fmt='o', label='Data', capsize=4,color='black')
+        ax1.errorbar(mu_samp.index.values, mu_samp_scaled, fmt='o', label='Data', capsize=4,color='black')#,yerr=mu_error.values)
         #sigma plot
         sigma_samp_scaled = sigma_samp.values / sigma_samp.index.values
         sigma_err_scaled = sigma_error.values / sigma_samp.index.values
-        ax2.errorbar(sigma_samp.index.values, sigma_samp_scaled, yerr=sigma_err_scaled, fmt='o', label='Data', capsize=4,color='black')
+        ax2.errorbar(sigma_samp.index.values, sigma_samp_scaled, fmt='o', label='Data', capsize=4,color='black')#, yerr=sigma_err_scaled)
     
     ax1.plot(x_arr, fitted_mean, 'r-', label='Fit')
     ax1.fill_between(x_arr, fitted_mean - mean_fit_error_band, fitted_mean + mean_fit_error_band, color='r', alpha=0.3, label=r'$\pm 1\sigma$ Band')
