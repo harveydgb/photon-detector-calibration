@@ -2,6 +2,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 from iminuit import Minuit
 import pandas as pd
 import json
@@ -29,6 +30,9 @@ def fit_unbinned_mle_simultaneous(df):
         #calculate predictions for each data point
         mu_vec, sigma_vec = mu_sig_func(E_true, lb, dE, a, b, c)
 
+        #prevents sigma from being zero-valued
+        sigma_vec = np.maximum(sigma_vec, 1e-9)
+        
         #calculate z-score
         z_score = (E_rec - mu_vec) / sigma_vec
 
@@ -39,7 +43,14 @@ def fit_unbinned_mle_simultaneous(df):
 
     ### applying minimisation with Minuit ###
     #using initial guesses from Q1
-    m = Minuit(total_nll, lb = 1.0, dE = 2.0, a = 0.5, b = 1.0, c = 0.05)
+    m = Minuit(total_nll, lb = 1.0, dE = 2.0, a = 0.5, b = 1.3, c = 0.05)
+
+    #setting limits for a, b and c to stay positive
+    m.limits["a"] = (0, None)
+    m.limits["b"] = (0, None)
+    m.limits["c"] = (0, None)
+
+
     m.errordef = Minuit.LIKELIHOOD #telling minuit this is a likelihood
 
     #running fits
@@ -64,7 +75,7 @@ def fit_unbinned_mle_simultaneous(df):
 
     return param_results, all_params, full_cov
 
-def fit_and_plot_simultaneous_unbinned_mle(df, fit_type):
+def fit_and_plot_simultaneous_unbinned_mle(df, fit_type, figure):
     
     #applying simultaneous mle fit
     param_results, all_params, full_cov = fit_unbinned_mle_simultaneous(df)
@@ -79,56 +90,72 @@ def fit_and_plot_simultaneous_unbinned_mle(df, fit_type):
     mean_fit_error_band, sigma_fit_error_band = q1.calculate_error_bands_by_bootstrap(all_params, full_cov, x_arr)
 
     #plotting
-    fig = q1.plot_mean_sigma_fit_with_error_bars(param_results, x_arr, mean_fit_error_band, sigma_fit_error_band)
+    fig = q1.plot_mean_sigma_fit_with_error_bars(param_results, x_arr, mean_fit_error_band, sigma_fit_error_band, figure)
 
     return fig
 
 # Question 3) (iii)
 
-def plot_parameter_comparison(filepath='../results.json'):
-    """
-    Plots a comparison of parameter estimates from the three different methods.
-    """
+def load_data(filepath='../results.json'):
     with open(filepath, 'r') as f:
         data = json.load(f)
+    return data
 
+def plot_parameter_comparison(data):
     #setting up labels and namings
     params = ['lb', 'dE', 'a', 'b', 'c']
-    latex_labels = [r'$\lambda$', r'$\Delta$ [GeV]', r'$a$ [GeV$^{1/2}$]', r'$b$ [GeV]', r'$c$']
+    param_labels = [r'$\lambda$', r'$\Delta$', r'$a$', r'$b$', r'$c$']
     methods = ['sample_ests', 'individual_fits', 'simultaneous_fit']
-    method_names = ['Sample Stats (Q1)', 'Individual MLE (Q2)', 'Simultaneous (Q3)']
-    colors = ['black', 'blue', 'red']
-    markers = ['o', 's', '^']
+    method_labels = ['Sample Estimate', 'Individual Fit', 'Simultaneous Fit']
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
 
-    #creating subplots
-    fig, axes = plt.subplots(1, 5, figsize=(16, 4), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(6.4, 6.4))
+    plt.suptitle("Figure 3.2: Parameter Values by Method")
+
+    
+    #creating insets
+    ax_ins_lb = ax.inset_axes([0.14, 0.55, 0.12, 0.12])
+    ax_ins_c = ax.inset_axes([0.86, 0.12, 0.12, 0.12])
 
     #looping over each parameter and plotting
     for i, param in enumerate(params):
-        ax = axes[i]
-        
-        #looping over each method per parameter
         for j, method in enumerate(methods):
             val = data[method]['values'][param]
             err = data[method]['errors'][param]
+            offset = (j - 1) * 0.2
+            x_position = i + offset
             
-            #plotting errorbars
-            ax.errorbar(j, val, yerr=err, fmt=markers[j], color=colors[j], capsize=5, markersize=6, label=method_names[j] if i == 2 else "")
+            #plotting legend only once
+            label = method_labels[j] if i == 0 else None
+            
+            ax.errorbar(x_position, val, yerr=err, fmt='o', color=colors[j], capsize=4, label=label)
 
-        #formatting subplots
-        ax.set_title(latex_labels[i])
-        ax.set_xticks(range(len(methods)))
-        ax.set_xticklabels(['Q1', 'Q2', 'Q3'])
-        ax.grid(True, linestyle='--', alpha=0.3, axis='y')
+            #adding inset plots
+            if param == 'lb':
+                ax_ins_lb.errorbar(x_position, val, yerr=err, fmt='o', color=colors[j], capsize=4)
+            elif param == 'c':
+                ax_ins_c.errorbar(x_position, val, yerr=err, fmt='o', color=colors[j], capsize=4)
 
-        #adjusting margins
-        ax.set_xlim(-0.5, 2.5)
+    #set axes labels
+    ax.set_xticks(range(len(params)))
+    ax.set_xticklabels(param_labels, fontsize=12)
+    ax.set_ylabel(r"Parameter Value", fontsize=12)
+    ax.legend(loc='upper right')
+    ax.grid(axis='y', linestyle='--', alpha=0.5)
+    ax.set_ylim(-0.1, 2.2)
 
-    #creting a global legend
-    handles, labels = axes[2].get_legend_handles_labels()
-    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0), ncol=3, frameon=False)
+    #lambda inset
+    ax_ins_lb.set_ylim(1.009, 1.015) 
+    ax_ins_lb.set_xlim(-0.3, 0.3)
+    ax_ins_lb.set_xticks([])
+    ax_ins_lb.grid(axis='y', linestyle='--', alpha=0.5)
+    ax_ins_lb.set_title(r'zoomed $\lambda$', fontsize=10)
+
+    #c inset
+    ax_ins_c.set_ylim(0.022, 0.045)
+    ax_ins_c.set_xlim(3.7, 4.3)
+    ax_ins_c.set_xticks([])
+    ax_ins_c.grid(axis='y', linestyle='--', alpha=0.5)
+    ax_ins_c.set_title(r'zoomed $c$', fontsize=10)
     
     return fig
-
-
-

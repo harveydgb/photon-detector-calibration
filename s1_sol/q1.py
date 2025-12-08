@@ -26,7 +26,7 @@ def plot_total_hist(df):
     ax.hist(diff, bins=50, histtype='step',color='black')
     ax.set_xlabel(r"$(E - E_0)$ [GeV]")
     ax.set_ylabel('Frequency')
-    ax.set_title(r'Distribution of all $E - E_0$')
+    ax.set_title(f"Figure 1.1: Distribution of Residuals", pad=10)
 
     return fig, ax
 
@@ -50,15 +50,19 @@ def plot_overlapping_hist(df):
     norm_color = mcolors.Normalize(vmin=min(unique_energies), vmax=max(unique_energies))
     cmap = cm.viridis
 
+    #defining common bins
+    diff = df['E_rec'] - df['E_true']
+    common_bins = np.linspace(np.floor(diff.min()), np.ceil(diff.max()), 50)
+
     # plotting hist differences across each E_0
     for E_0, group in df.groupby('E_true'):
         diff = group['E_rec'] - E_0
         color = cmap(norm_color(E_0))
-        ax.hist(diff, bins=50, histtype='step',color=color, label=f'$E_0={E_0}$')
+        ax.hist(diff, bins=common_bins, histtype='step',color=color, label=f'$E_0={E_0}$')
     
     ax.set_xlabel(r"$(E - E_0)$ [GeV]")
     ax.set_ylabel("Frequency")
-    ax.set_title(r'Distribution of $E - E_0$ for each $E_0$')
+    ax.set_title(f"Figure 1.2: Overlayed Residual Distributions", pad=10)
     ax.legend()
     
     return fig
@@ -103,6 +107,7 @@ def plot_sample_estimates(sample_estimate_values):
 
     #plotting subplots
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.8, 4.8))
+    plt.suptitle("Figure 1.3: Sample Estimates", y=0.95)
     
     #samples mean
     ax1.errorbar(mu_samp.index, mu_samp, yerr=mu_error, fmt='o', capsize=4,color='black')
@@ -152,8 +157,8 @@ def least_squares_fit(sample_estimate_values):
     mean_params_error = np.sqrt(np.diag(mean_cov))
 
     #fitting standard deviation
-    p0_sig = [0.5, 1, 0.01] #setting sigma param initial values
-    sigma_params, sigma_cov = curve_fit(sigma_func, sigma_samp.index.values, sigma_samp.values, sigma=sigma_error.values, p0 = p0_sig, absolute_sigma=True)
+    p0_sig = [0.5, 1.3, 0.01] #setting sigma param initial values
+    sigma_params, sigma_cov = curve_fit(sigma_func, sigma_samp.index.values, sigma_samp.values, sigma=sigma_error.values, p0 = p0_sig, absolute_sigma=True, bounds=(0, np.inf))
     sigma_params_error = np.sqrt(np.diag(sigma_cov))
 
     #merging into one matrix and vector
@@ -248,7 +253,7 @@ def calculate_error_bands_by_bootstrap(all_params, full_cov, x_arr, n_boot=1000)
 
     return mean_fit_error_band, sigma_fit_error_band
 
-def plot_mean_sigma_fit_with_error_bars(param_results, x_arr, mean_fit_error_band, sigma_fit_error_band, sample_estimate_values=None):
+def plot_mean_sigma_fit_with_error_bars(param_results, x_arr, mean_fit_error_band, sigma_fit_error_band, figure, sample_estimate_values=None):
     """Plots two graphs for the mu and sigma values, eaching showing the actual
     mean and std. dev from E_0, as well the line of best fit, and associated error
     bands for that fit.
@@ -301,12 +306,13 @@ def plot_mean_sigma_fit_with_error_bars(param_results, x_arr, mean_fit_error_ban
     ax2.set_title("Fractional Resolution")
     ax2.legend()
     ax2.grid(True, linestyle='--', alpha=0.5)
+    plt.suptitle(figure, y=0.93)
     
     fig.tight_layout()
 
     return fig
 
-def least_squares_fit_and_plot(sample_estimate_values, fit_type):
+def least_squares_fit_and_plot(sample_estimate_values, fit_type, figure):
     """Applies a least squares to fit of the associated functions to the sample 
     estimate values. Then applies bootstrapping to calculate error bands for the 
     fit at each E_0 value. Plots all of this information onto two graphs, one for
@@ -333,6 +339,6 @@ def least_squares_fit_and_plot(sample_estimate_values, fit_type):
     mean_fit_error_band, sigma_fit_error_band = calculate_error_bands_by_bootstrap(all_params, full_cov, x_arr)
 
     #plotting
-    fig = plot_mean_sigma_fit_with_error_bars(param_results, x_arr, mean_fit_error_band, sigma_fit_error_band, sample_estimate_values=sample_estimate_values)
+    fig = plot_mean_sigma_fit_with_error_bars(param_results, x_arr, mean_fit_error_band, sigma_fit_error_band, figure, sample_estimate_values=sample_estimate_values)
     
     return fig

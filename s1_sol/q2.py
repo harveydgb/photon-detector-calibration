@@ -89,6 +89,7 @@ def unbinned_mle_and_histogram_plot(df, mle_fitted_values):
     mu_mle, mu_mle_err, sigma_mle, sigma_mle_err = mle_fitted_values
     
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.8, 4.8))
+    plt.suptitle("Figure 2.1: Individual MLE Sample Parameter Fitting", y=0.95)
 
     #creating x array and an empty y array for the total pdf to fill
     x_arr = np.linspace(-20, 20, 1000)
@@ -100,7 +101,8 @@ def unbinned_mle_and_histogram_plot(df, mle_fitted_values):
     cmap = cm.viridis
 
     #defining common bins
-    common_bins = np.linspace(-20, 20, 50)
+    diff = df['E_rec'] - df['E_true']
+    common_bins = np.linspace(np.floor(diff.min()), np.ceil(diff.max()), 50)
     bin_width = common_bins[1] - common_bins[0]
 
     #iterating over each E_0 group
