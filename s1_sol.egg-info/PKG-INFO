@@ -8,33 +8,178 @@ Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: numpy
 Requires-Dist: matplotlib
-Requires-Dist: requests
 Requires-Dist: scipy
 Requires-Dist: pandas
 Requires-Dist: iminuit
 Dynamic: license-file
 
-# S1: Statistical Methods for Data Intensive Science
+# S1 Coursework: Photon Detector Calibration Analysis
 
-## Coursework Instructions 25/26
+**MPhil DIS: Statistical Methods for Data Intensive Science (2025/26)**
 
-You can replace this `README.md` file with your own when you submit the project.
+This project implements a statistical analysis of photon detector calibration data using multiple estimation methods to determine detector performance parameters.
 
-The assignment question is provided in a jupyter notebook saved in `notebooks/instructions.ipynb`. Your solution should be provided in a notebook saved at `notebooks/solution.ipynb`. The majority of your code should live in a pip installable folder called `s1_sol`, which already contains an example file called `example.py` (you can add other files too), and should be loaded into `notebooks/solution.ipynb`. All other instructions can be found in `notebooks/instructions.ipynb`. 
+## Overview
 
-Your `notebooks/solution.ipynb` notebook should produce files in the `figs` folder called:
- - `figs/Figure1.1.pdf`
- - `figs/Figure1.2.pdf`
- - `figs/Figure1.3.pdf`
- - `figs/Figure1.4.pdf`
- - `figs/Figure2.1.pdf`
- - `figs/Figure2.2.pdf`
- - `figs/Figure3.1.pdf`
- - `figs/Figure3.2.pdf`
- - `figs/Figure4.1.pdf`
+The analysis aims to estimate calibration parameters for a photon detector by fitting models to calibration measurements. The detector was tested at seven energy levels (20, 30, 40, 50, 60, 70, 80 GeV) with 1000 measurements at each level. The measured energy $E$ follows a normal distribution with mean $\mu_E = \lambda E_0 + \Delta$ and width $\sigma_E$ given by a resolution model. The goal is to estimate the parameters $\{\lambda, \Delta, a, b, c\}$ using various statistical methods.
 
-Your `notebooks/solution.ipynb` notebook should produce a file called `results.json` with the correct format.
+## Installation
 
-The assignment is due on 17/12/2025. You will lose write access to this repository at 23:59 on 17/12/2025 after which you assignment will be assessed.
+### Prerequisites
+- Python ≥3.9
 
-Good luck!
+### Setup
+
+1. Clone or download this repository
+2. Install the package in editable mode:
+   ```bash
+   pip install -e .
+   ```
+
+This will install the `s1_sol` package and all required dependencies.
+
+## Dependencies
+
+The project requires the following Python packages:
+- `numpy` - Numerical computations
+- `matplotlib` - Plotting and visualization
+- `scipy` - Scientific computing (optimization, curve fitting)
+- `pandas` - Data manipulation
+- `iminuit` - Maximum likelihood estimation
+- `requests` - HTTP library
+
+All dependencies are automatically installed when installing the package.
+
+## Usage
+
+### Running the Analysis
+
+1. Open the solution notebook:
+   ```bash
+   jupyter notebook notebooks/solution.ipynb
+   ```
+
+2. Run all cells to execute the complete analysis pipeline
+
+3. The notebook will generate:
+   - All figures in the `figs/` directory
+   - `results.json` containing parameter estimates and uncertainties
+
+### Quick Start
+
+```python
+from s1_sol import main
+import matplotlib.pyplot as plt
+
+# Load data and set plotting style
+main.set_mpl_style()
+df = main.load_data()
+
+# Run analysis (see solution.ipynb for full workflow)
+```
+
+## Project Structure
+
+```
+hb747/
+├── s1_sol/                    # Main analysis package
+│   ├── __init__.py
+│   ├── main.py                # Data loading and style configuration
+│   ├── q1.py                  # Sample estimates and least squares fitting
+│   ├── q2.py                  # Individual unbinned MLE fits
+│   ├── q3.py                  # Simultaneous unbinned MLE fit
+│   ├── q4.py                  # Non-parametric bootstrap analysis
+│   └── mphil.mplstyle         # Matplotlib style file
+├── notebooks/
+│   ├── instructions.ipynb    # Assignment instructions
+│   └── solution.ipynb         # Complete solution and analysis
+├── figs/                       # Generated figures (PDF format)
+│   ├── Figure1.1.pdf          # Total residual distribution
+│   ├── Figure1.2.pdf          # Overlaid residual distributions
+│   ├── Figure1.3.pdf          # Sample estimates
+│   ├── Figure1.4.pdf          # Sample estimate fits
+│   ├── Figure2.1.pdf          # Individual MLE fits
+│   ├── Figure2.2.pdf          # Individual fit results
+│   ├── Figure3.1.pdf          # Simultaneous MLE fit
+│   ├── Figure3.2.pdf          # Parameter comparison
+│   ├── Figure4.1.pdf          # Bootstrap histograms
+│   └── Figure4.2.pdf          # Bootstrap vs analytical errors
+├── sample.csv                  # Input calibration data
+├── results.json                # Parameter estimates and uncertainties
+├── pyproject.toml             # Package configuration
+└── README.md                   # This file
+```
+
+## Analysis Methods
+
+The project implements four complementary approaches to parameter estimation:
+
+### 1. Sample Estimates (Q1)
+- Calculates sample mean and standard deviation for each energy level
+- Fits linear model for mean: $\mu_E = \lambda E_0 + \Delta$
+- Fits resolution model for width using least squares
+- Uses parametric bootstrap for uncertainty bands (16th/84th percentiles)
+
+### 2. Individual MLE Fits (Q2)
+- Performs unbinned maximum likelihood estimation for each energy level
+- Fits Gaussian distributions independently
+- Validates normal distribution assumption
+- Results used as input for least squares fitting
+
+### 3. Simultaneous MLE Fit (Q3)
+- Global unbinned maximum likelihood fit across all data
+- Simultaneously estimates all parameters $\{\lambda, \Delta, a, b, c\}$
+- Uses Minuit optimization with parameter constraints
+- Provides unified parameter estimates
+
+### 4. Bootstrap Analysis (Q4)
+- Non-parametric bootstrap with 2500 iterations
+- Resamples entire dataset with replacement
+- Applies all three methods to each bootstrap sample
+- Compares bootstrap uncertainties with analytical (Hessian-based) errors
+- Reveals non-Gaussian behavior in parameter distributions
+
+## Results
+
+### Output Files
+
+**Figures** (`figs/` directory):
+- All analysis visualizations saved as PDF files
+- Figures show data distributions, fits, parameter comparisons, and bootstrap results
+
+**Parameter Estimates** (`results.json`):
+- Contains parameter values and uncertainties for all three methods:
+  - `sample_ests`: Sample estimate method
+  - `individual_fits`: Individual MLE method
+  - `simultaneous_fit`: Simultaneous MLE method
+- Each entry includes `values` and `errors` dictionaries
+
+### Key Findings
+
+- All three methods produce consistent parameter estimates
+- Sample estimate and individual MLE methods show excellent agreement
+- Simultaneous fit shows slight differences due to global optimization
+- Bootstrap analysis reveals non-Gaussian uncertainties for width parameters
+- Detector shows systematic bias ($\lambda \approx 1.012$, $\Delta \approx 1.96$ GeV)
+- Resolution improves at higher energies (fractional error drops from ~11% to ~6%)
+
+## Technical Notes
+
+- **Uncertainty bands**: Error bands use 16th/84th percentiles (equivalent to ±1σ) to handle non-Gaussian distributions
+- **Bootstrap iterations**: 2500 bootstrap samples used for uncertainty analysis
+- **Optimization**: Minuit package used for MLE with likelihood error definition
+- **Parameter constraints**: Parameters $a$, $b$, and $c$ constrained to be positive
+
+## Author
+
+**Harvey Bermingham**  
+Email: harveybermingham1@gmail.com  
+Cambridge University ID: hb747@cam.ac.uk
+
+## License
+
+See LICENSE file for details.
+
+## Acknowledgments
+
+Coursework for MPhil DIS: Statistical Methods for Data Intensive Science, 2025/26.

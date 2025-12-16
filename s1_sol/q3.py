@@ -2,7 +2,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from iminuit import Minuit
 import pandas as pd
 import json

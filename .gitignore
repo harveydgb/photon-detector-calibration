@@ -1,1 +1,28 @@
+# Virtual environment
 s1cw_env/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+test_ci.py
+test_notebook.py

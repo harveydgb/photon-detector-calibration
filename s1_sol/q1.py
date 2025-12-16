@@ -4,10 +4,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import json
-import requests
 import pandas as pd
 from scipy.optimize import curve_fit
-import os
 import matplotlib.cm as cm      
 import matplotlib.colors as mcolors
 
@@ -212,15 +210,17 @@ def print_and_save_results(param_results, fit_type, filepath='../results.json'):
 def calculate_error_bands_by_bootstrap(all_params, full_cov, x_arr, n_boot=1000):
     """Calculating the 1 sigma error bands of the fit using parametric 
     bootstrapping of the fitted parameter values lambda, delta, a, b and c.
+    Uses percentiles (16th/84th) to handle non-Gaussian distributions.
     
     Inputs
     all_params: fitted parameters for mean and sigma
     full_cov: covariance matrix for mu and sigma parameters
     x_arr: array of smooth x_values across the E_0 value range
+    n_boot: number of bootstrap iterations
     
     Returns
-    mean_fit_error_band: array of boostrap derived standard devations of the fit at each E_0 value
-    sigma_fit_error_band: array of boostrap derived standard devations of the fit at each E_0 value 
+    mean_fit_error_band: tuple of (lower_offset, upper_offset) arrays from median
+    sigma_fit_error_band: tuple of (lower_offset, upper_offset) arrays from median
     """
 
     rng = np.random.default_rng()
@@ -247,9 +247,18 @@ def calculate_error_bands_by_bootstrap(all_params, full_cov, x_arr, n_boot=1000)
         boot_mean_curves.append(y_mean_i)
         boot_sigma_curves.append(y_sigma_i)
 
-    #calculating error band
-    mean_fit_error_band = np.std(boot_mean_curves, axis=0)
-    sigma_fit_error_band = np.std(boot_sigma_curves, axis=0)
+    #calculating error bands using 16th and 84th percentile
+    mean_lower = np.percentile(boot_mean_curves, 16, axis=0)
+    mean_upper = np.percentile(boot_mean_curves, 84, axis=0)
+    mean_median = np.median(boot_mean_curves, axis=0)
+    
+    sigma_lower = np.percentile(boot_sigma_curves, 16, axis=0)
+    sigma_upper = np.percentile(boot_sigma_curves, 84, axis=0)
+    sigma_median = np.median(boot_sigma_curves, axis=0)
+    
+    #tuples of offset sigmas
+    mean_fit_error_band = (mean_median - mean_lower, mean_upper - mean_median)
+    sigma_fit_error_band = (sigma_median - sigma_lower, sigma_upper - sigma_median)
 
     return mean_fit_error_band, sigma_fit_error_band
 
@@ -290,7 +299,8 @@ def plot_mean_sigma_fit_with_error_bars(param_results, x_arr, mean_fit_error_ban
         ax2.errorbar(sigma_samp.index.values, sigma_samp_scaled, fmt='o', label='Data', capsize=4,color='black')#, yerr=sigma_err_scaled)
     
     ax1.plot(x_arr, fitted_mean, 'r-', label='Fit')
-    ax1.fill_between(x_arr, fitted_mean - mean_fit_error_band, fitted_mean + mean_fit_error_band, color='r', alpha=0.3, label=r'$\pm 1\sigma$ Band')
+    mean_lower, mean_upper = mean_fit_error_band
+    ax1.fill_between(x_arr, fitted_mean - mean_lower, fitted_mean + mean_upper, color='r', alpha=0.3, label=r'$1\sigma$ Band (percentiles)')
     
     ax1.set_xlabel(r"$E_0$ [GeV]")
     ax1.set_ylabel(r"$\hat{\mu}_{\rm} - E_0$ [GeV]")
@@ -299,7 +309,8 @@ def plot_mean_sigma_fit_with_error_bars(param_results, x_arr, mean_fit_error_ban
     ax1.grid(True, linestyle='--', alpha=0.5)
 
     ax2.plot(x_arr, fitted_sigma, 'r-', label='Fit')
-    ax2.fill_between(x_arr, fitted_sigma - sigma_fit_error_band, fitted_sigma + sigma_fit_error_band, color='r', alpha=0.3, label=r'$\pm 1\sigma$ Band')
+    sigma_lower, sigma_upper = sigma_fit_error_band
+    ax2.fill_between(x_arr, fitted_sigma - sigma_lower, fitted_sigma + sigma_upper, color='r', alpha=0.3, label=r'$1\sigma$ Band (percentiles)')
 
     ax2.set_xlabel(r"$E_0$ [GeV]")
     ax2.set_ylabel(r"$\hat{\sigma}_{\rm} / E_0$")
@@ -335,7 +346,7 @@ def least_squares_fit_and_plot(sample_estimate_values, fit_type, figure):
     #creating x array to sample y values over
     x_arr = np.linspace(20, 80, 200)
 
-    #appling bootstrapping and saving sigma values
+    #applying bootstrapping and saving sigma values
     mean_fit_error_band, sigma_fit_error_band = calculate_error_bands_by_bootstrap(all_params, full_cov, x_arr)
 
     #plotting

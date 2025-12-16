@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 from s1_sol import q1, q2, q3
-from matplotlib.lines import Line2D
 
 # Question 4) (i)
 
@@ -13,7 +12,7 @@ def run_entire_sample_bootstrap(df, n_boot=2500):
     """
     """
     
-    # Dictionary to store lists of parameter results
+    #dictionary to store lists of parameter results
     boot_results = {
         'sample_ests': {'lb':[], 'dE':[], 'a':[], 'b':[], 'c':[]},
         'individual_fits': {'lb':[], 'dE':[], 'a':[], 'b':[], 'c':[]},
@@ -132,14 +131,14 @@ def calculate_bootstrap_stats(boot_results):
     """
     stats = {}
     
-    # Loop through methods
+    #loop through methods
     for method, params_dict in boot_results.items():
-        # Initialize the structure the plotter expects
+        #initialise dictionary
         stats[method] = {'values': {}, 'errors': {}}
         
-        # Loop through parameters
+        #loop through parameters
         for param, values in params_dict.items():
-            # Separate values and errors into their own dictionaries
+            #separate values and errors into their own dictionaries
             stats[method]['values'][param] = np.mean(values)
             stats[method]['errors'][param] = np.std(values)
                 

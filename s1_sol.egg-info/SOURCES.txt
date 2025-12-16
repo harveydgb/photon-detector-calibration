@@ -6,6 +6,8 @@ s1_sol/main.py
 s1_sol/mphil.mplstyle
 s1_sol/q1.py
 s1_sol/q2.py
+s1_sol/q3.py
+s1_sol/q4.py
 s1_sol.egg-info/PKG-INFO
 s1_sol.egg-info/SOURCES.txt
 s1_sol.egg-info/dependency_links.txt

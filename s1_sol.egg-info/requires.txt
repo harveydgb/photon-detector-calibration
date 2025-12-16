@@ -1,6 +1,5 @@
 numpy
 matplotlib
-requests
 scipy
 pandas
 iminuit
