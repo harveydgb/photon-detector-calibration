@@ -31,7 +31,6 @@ The project requires the following Python packages:
 - `scipy` - Scientific computing (optimization, curve fitting)
 - `pandas` - Data manipulation
 - `iminuit` - Maximum likelihood estimation
-- `requests` - HTTP library
 
 All dependencies are automatically installed when installing the package.
 

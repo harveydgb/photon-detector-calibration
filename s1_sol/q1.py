@@ -108,14 +108,14 @@ def plot_sample_estimates(sample_estimate_values):
     plt.suptitle("Figure 1.3: Sample Estimates", y=0.95)
     
     #samples mean
-    ax1.errorbar(mu_samp.index, mu_samp, yerr=mu_error, fmt='o', capsize=4,color='black')
+    ax1.errorbar(mu_samp.index, mu_samp, yerr=mu_error, fmt='o', capsize=5,color='black')
     ax1.set_xlabel(r"$E_0$ [GeV]")
     ax1.set_ylabel(r"Mean Energy $\hat{\mu}_{\rm samp}$ [GeV]")
     ax1.set_title(r"Sample Mean vs $E_0$")
     ax1.grid(True, linestyle='--', alpha=0.5)
     
     #sample standard deviation
-    ax2.errorbar(sigma_samp.index, sigma_samp, yerr=sigma_error, fmt='o', capsize=4,color='black')
+    ax2.errorbar(sigma_samp.index, sigma_samp, yerr=sigma_error, fmt='o', capsize=5,color='black')
     ax2.set_xlabel(r"$E_0$ [GeV]")
     ax2.set_ylabel(r"Standard Deviation $\hat{\sigma}_{\rm samp}$ [GeV]")
     ax2.set_title(r"Sample Standard Deviation vs $E_0$")
@@ -292,11 +292,11 @@ def plot_mean_sigma_fit_with_error_bars(param_results, x_arr, mean_fit_error_ban
 
         #mean plot
         mu_samp_scaled = mu_samp.values - mu_samp.index.values
-        ax1.errorbar(mu_samp.index.values, mu_samp_scaled, fmt='o', label='Data', capsize=4,color='black')#,yerr=mu_error.values)
+        ax1.errorbar(mu_samp.index.values, mu_samp_scaled, fmt='o', label='Data', capsize=4,color='black')
         #sigma plot
         sigma_samp_scaled = sigma_samp.values / sigma_samp.index.values
         sigma_err_scaled = sigma_error.values / sigma_samp.index.values
-        ax2.errorbar(sigma_samp.index.values, sigma_samp_scaled, fmt='o', label='Data', capsize=4,color='black')#, yerr=sigma_err_scaled)
+        ax2.errorbar(sigma_samp.index.values, sigma_samp_scaled, fmt='o', label='Data', capsize=4,color='black')
     
     ax1.plot(x_arr, fitted_mean, 'r-', label='Fit')
     mean_lower, mean_upper = mean_fit_error_band
