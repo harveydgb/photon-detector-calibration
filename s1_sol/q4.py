@@ -3,13 +3,23 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import json
 from s1_sol import q1, q2, q3
 
 # Question 4) (i)
 
 def run_entire_sample_bootstrap(df, n_boot=2500):
     """
+    Performs non-parametric bootstrap by resampling the entire dataset with replacement.
+    Applies all three fitting methods (sample estimates, individual MLE, simultaneous MLE)
+    to each bootstrap sample.
+    
+    Inputs
+    df: pandas dataframe of all detector measurements
+    n_boot: number of bootstrap iterations (default: 2500)
+    
+    Returns
+    boot_results: nested dictionary containing lists of parameter values for each method
+                  Format: {method: {param: [list of values from all bootstrap iterations]}}
     """
     
     #dictionary to store lists of parameter results
@@ -55,6 +65,15 @@ def run_entire_sample_bootstrap(df, n_boot=2500):
 
 def plot_bootstrap_histograms(boot_results):
     """
+    Plot probability density histograms of bootstrap parameter distributions for all
+    parameters and all three fitting methods. Arranged in a 2x3 grid (top-right hidden).
+    
+    Inputs
+    boot_results: nested dictionary containing lists of parameter values for each method
+                  Format: {method: {param: [list of values from all bootstrap iterations]}}
+    
+    Returns
+    fig: matplotlib figure object with histograms for each parameter
     """
     
     #setting layout and labels
@@ -116,7 +135,17 @@ def plot_bootstrap_histograms(boot_results):
     return fig
 
 def boot_and_plot_hists_all_methods(df, n_boot=2500):
-    """"""
+    """
+    Run bootstrap analysis and plot histograms of parameter distributions.
+    
+    Inputs
+    df: pandas dataframe of all detector measurements
+    n_boot: number of bootstrap iterations (default: 2500)
+    
+    Returns
+    fig: matplotlib figure object with bootstrap histograms
+    boot_results: nested dictionary containing lists of parameter values for each method
+    """
     boot_results = run_entire_sample_bootstrap(df, n_boot=n_boot)
     fig = plot_bootstrap_histograms(boot_results)
 
@@ -128,6 +157,13 @@ def calculate_bootstrap_stats(boot_results):
     """
     Calculates the mean and standard deviation for each parameter and method
     from the raw bootstrap samples.
+    
+    Inputs
+    boot_results: nested dictionary containing lists of parameter values for each method
+                  Format: {method: {param: [list of values from all bootstrap iterations]}}
+    
+    Returns
+    stats: nested dictionary with format {method: {'values': {param: mean}, 'errors': {param: std}}}
     """
     stats = {}
     
@@ -146,9 +182,18 @@ def calculate_bootstrap_stats(boot_results):
 
 def plot_overlay_comparison(original_data, boot_data):
     """
-    Plots original results vs bootstrap results on the same axes.
-    Original Data = Solid Markers
-    Bootstrap Data = Hollow Markers
+    Plots original results vs bootstrap results on the same axes for comparison.
+    Original data uses solid markers, bootstrap data uses hollow markers.
+    Includes zoomed insets for parameters λ and c.
+    
+    Inputs
+    original_data: dictionary containing original parameter values and errors
+                   Format: {method: {'values': {param: value}, 'errors': {param: error}}}
+    boot_data: dictionary containing bootstrap parameter values and errors
+               Format: {method: {'values': {param: mean}, 'errors': {param: std}}}
+    
+    Returns
+    fig: matplotlib figure object showing comparison of original vs bootstrap results
     """
 
     #setting up labels and namings

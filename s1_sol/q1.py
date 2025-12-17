@@ -12,7 +12,14 @@ import matplotlib.colors as mcolors
 # Question 1) (i)
 def plot_total_hist(df):
     """
-    Plotting Histogram of all E - E_0 values.
+    Plot histogram of all residuals (E - E_0) across all energy levels.
+    
+    Inputs
+    df: pandas dataframe of all detector measurements with columns 'E_rec' and 'E_true'
+    
+    Returns
+    fig: matplotlib figure object
+    ax: matplotlib axes object
     """
     
     fig, ax = plt.subplots(figsize=(6.4, 4.8))
@@ -124,7 +131,16 @@ def plot_sample_estimates(sample_estimate_values):
     return fig
 
 def calculate_and_plot_sample_estimates(df):
+    """
+    Calculate sample estimates and plot them on two subplots.
     
+    Inputs
+    df: pandas dataframe of all detector measurements
+    
+    Returns
+    fig: matplotlib figure object with sample estimates plots
+    sample_estimate_values: tuple in form of (mu_samp, mu_error, sigma_samp, sigma_error)
+    """
     sample_estimate_values = calculate_sample_estimates(df)
     fig = plot_sample_estimates(sample_estimate_values)
 
@@ -133,9 +149,32 @@ def calculate_and_plot_sample_estimates(df):
 # Question 1) (iv)
 
 def mean_func(E_0, lb, dE):
+    """
+    Calculate mean energy as a function of true energy.
+    
+    Inputs
+    E_0: true energy value(s) [GeV]
+    lb: lambda parameter (slope)
+    dE: delta parameter (offset) [GeV]
+    
+    Returns
+    mean energy: lb * E_0 + dE [GeV]
+    """
     return lb * E_0 + dE
 
 def sigma_func(E_0, a, b, c):
+    """
+    Calculate standard deviation as a function of true energy.
+    
+    Inputs
+    E_0: true energy value(s) [GeV]
+    a: resolution parameter [GeV^(1/2)]
+    b: resolution parameter [GeV]
+    c: resolution parameter (dimensionless)
+    
+    Returns
+    standard deviation: sqrt(a^2 * E_0 + b^2 + c^2 * E_0^2) [GeV]
+    """
     return np.sqrt(np.abs((E_0 * (a**2)) + (b**2) + ((E_0**2) * (c**2))))
 
 def least_squares_fit(sample_estimate_values):
@@ -143,9 +182,12 @@ def least_squares_fit(sample_estimate_values):
     mean and standard deviation data calculated from the raw data.
 
     Inputs
-    df: pandas dataframe of all detector measurements.
+    sample_estimate_values: tuple in form of (mu_samp, mu_error, sigma_samp, sigma_error)
+    
     Returns
-    results: dictionary of parameter results"""
+    param_results: dictionary of parameter results with format {param: (value, error)}
+    all_params: numpy array of all fitted parameters [lb, dE, a, b, c]
+    full_cov: 5x5 covariance matrix for all parameters"""
 
     #unpacking values
     mu_samp, mu_error, sigma_samp, sigma_error = sample_estimate_values
@@ -179,9 +221,14 @@ def least_squares_fit(sample_estimate_values):
 def print_and_save_results(param_results, fit_type, filepath='../results.json'):
     """Prints and saves the results of the calculated parameters to 
     results.json file.
+    
     Inputs
-    param_results: dictionary of fit parameter values
-    fit_type: name of the fit used to calculate params"""
+    param_results: dictionary of fit parameter values with format {param: (value, error)}
+    fit_type: name of the fit used to calculate params (e.g., 'sample_ests')
+    filepath: path to results.json file (default: '../results.json')
+    
+    Returns
+    None (prints to console and modifies JSON file)"""
     
     #printing out fitted values
     print("Fitted parameter values:")
@@ -263,16 +310,18 @@ def calculate_error_bands_by_bootstrap(all_params, full_cov, x_arr, n_boot=1000)
     return mean_fit_error_band, sigma_fit_error_band
 
 def plot_mean_sigma_fit_with_error_bars(param_results, x_arr, mean_fit_error_band, sigma_fit_error_band, figure, sample_estimate_values=None):
-    """Plots two graphs for the mu and sigma values, eaching showing the actual
+    """Plots two graphs for the mu and sigma values, each showing the actual
     mean and std. dev from E_0, as well the line of best fit, and associated error
     bands for that fit.
     
     Inputs
-    sample_estimate_values: tuple in form of (mu_samp, mu_error, sigma_samp, sigma_error)
-    param_results: dictionary of fit parameter values
+    param_results: dictionary of fit parameter values with format {param: (value, error)}
     x_arr: array of smooth x_values across the E_0 value range
-    mean_fit_error_band: array of uncertainty values for the mean fit at each E_0 value
-    sigma_fit_error_band: array of uncertainty values for the sigma fit at each E_0 value
+    mean_fit_error_band: tuple of (lower_offset, upper_offset) arrays for mean fit error bands
+    sigma_fit_error_band: tuple of (lower_offset, upper_offset) arrays for sigma fit error bands
+    figure: string title for the figure
+    sample_estimate_values: optional tuple in form of (mu_samp, mu_error, sigma_samp, sigma_error)
+                           If provided, data points will be plotted on the graphs
     
     Returns
     fig: the matplotlib figure object, for purposes of saving the image
@@ -324,14 +373,15 @@ def plot_mean_sigma_fit_with_error_bars(param_results, x_arr, mean_fit_error_ban
     return fig
 
 def least_squares_fit_and_plot(sample_estimate_values, fit_type, figure):
-    """Applies a least squares to fit of the associated functions to the sample 
+    """Applies a least squares fit of the associated functions to the sample 
     estimate values. Then applies bootstrapping to calculate error bands for the 
     fit at each E_0 value. Plots all of this information onto two graphs, one for
     mu and one for sigma.
     
     Inputs
     sample_estimate_values: tuple in form of (mu_samp, mu_error, sigma_samp, sigma_error)
-    fit_type: name of the fit used to calculate params
+    fit_type: name of the fit used to calculate params (e.g., 'sample_ests')
+    figure: string title for the figure
 
     Returns
     fig: the matplotlib figure object, for purposes of saving the image

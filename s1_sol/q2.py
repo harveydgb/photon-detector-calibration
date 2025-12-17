@@ -9,19 +9,20 @@ from iminuit.cost import UnbinnedNLL
 import matplotlib.cm as cm      
 import matplotlib.colors as mcolors
 import pandas as pd
-from scipy.optimize import curve_fit
 
 # Question 2) (i)
 
 def unbinned_mle(df):
     """
-    Uses the unbinned MLE to fit distributions to the residuals of measurements relative
-    to each E_0 value.
+    Uses the unbinned MLE to fit Gaussian distributions to the measured energy values
+    for each E_0 group. Fits are performed on the actual E values (not residuals).
+    
     Inputs
-    df: pandas dataframe of all detector measurements.
+    df: pandas dataframe of all detector measurements with columns 'E_rec' and 'E_true'
 
     Returns
     mle_fitted_values: tuple in form of (mu_mle, mu_mle_err, sigma_mle, sigma_mle_err)
+                       where each element is a pandas Series indexed by E_0 values
     """
     fit_results = {}
 
@@ -75,8 +76,8 @@ def unbinned_mle(df):
 
 def unbinned_mle_and_histogram_plot(df, mle_fitted_values):
     """Plots histograms of the distributions of residuals from each E_0 value
-    alongside the MLE fitted and scaled dsibtributions. Also plots a second identical
-    graph which only shows the total histogram and total pdf.
+    alongside the MLE fitted and scaled distributions. Also plots a second graph
+    which shows the total histogram and sum of all fitted PDFs.
     
     Inputs
     df: pandas dataframe of all detector measurements
@@ -149,17 +150,18 @@ def unbinned_mle_and_histogram_plot(df, mle_fitted_values):
     return fig
 
 def unbinned_mle_fit_and_plot(df):
-    """Uses the unbinned MLE to fit distributions to the residuals of measurements relative
-    to each E_0 value. Then plots histograms of the distributions of residuals from each E_0 value
-    alongside the MLE fitted and scaled dsibtributions. Also plots a second identical
-    graph which only shows the total histogram and total pdf.
+    """Uses the unbinned MLE to fit Gaussian distributions to the measured energy values
+    for each E_0 group. Then plots histograms of the distributions of residuals from each E_0 value
+    alongside the MLE fitted and scaled distributions. Also plots a second graph
+    which shows the total histogram and sum of all fitted PDFs.
     
     Inputs
     df: pandas dataframe of all detector measurements
     
     Returns
+    fig: matplotlib figure object
     mle_fitted_values: tuple in form of (mu_mle, mu_mle_err, sigma_mle, sigma_mle_err)
-    fig: matplotlib figure object"""
+                       where each element is a pandas Series indexed by E_0 values"""
 
     mle_fitted_values = unbinned_mle(df)
     fig = unbinned_mle_and_histogram_plot(df, mle_fitted_values)

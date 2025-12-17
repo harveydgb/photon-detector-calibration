@@ -167,3 +167,14 @@ See LICENSE file for details.
 ## Acknowledgments
 
 Coursework for MPhil DIS: Statistical Methods for Data Intensive Science, 2025/26.
+
+## Use of Generative Tools
+
+This project has utlised auto-generative tools in the development of the analysis for this project.
+
+Example prompts used for this project:
+- Generate code for zoomed in snapshots of these parameters within the figure
+- Create a general README.md template structure for this project
+- Generate doc-strings for this function
+- Review overall project structure for completeness, consistency and best practice
+

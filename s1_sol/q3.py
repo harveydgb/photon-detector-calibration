@@ -2,7 +2,6 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from iminuit import Minuit
 import pandas as pd
 import json
@@ -12,7 +11,20 @@ from s1_sol import q1
 # Question 3) (i)
 
 def mu_sig_func(E_true, lb, dE, a, b, c):
-    """Calculates the mu and sigma values of the total data set given these associated parameters."""
+    """Calculates the mu and sigma values for given true energy values and parameters.
+    
+    Inputs
+    E_true: true energy value(s) [GeV], can be array or scalar
+    lb: lambda parameter (slope for mean)
+    dE: delta parameter (offset for mean) [GeV]
+    a: resolution parameter [GeV^(1/2)]
+    b: resolution parameter [GeV]
+    c: resolution parameter (dimensionless)
+    
+    Returns
+    mu: mean energy values, mu = lb * E_true + dE [GeV]
+    sigma: standard deviation values, sigma = sqrt(a^2 * E_true + b^2 + c^2 * E_true^2) [GeV]
+    """
     
     mu = lb * E_true + dE
     sigma = np.sqrt(np.abs((a**2 * E_true) + b**2 + (c * E_true)**2))
@@ -20,6 +32,18 @@ def mu_sig_func(E_true, lb, dE, a, b, c):
     return mu, sigma
 
 def fit_unbinned_mle_simultaneous(df):
+    """
+    Performs simultaneous unbinned maximum likelihood fit to all data points at once.
+    Fits all parameters {λ, Δ, a, b, c} simultaneously using Minuit optimization.
+    
+    Inputs
+    df: pandas dataframe of all detector measurements with columns 'E_rec' and 'E_true'
+    
+    Returns
+    param_results: dictionary of parameter results with format {param: (value, error)}
+    all_params: numpy array of all fitted parameters [lb, dE, a, b, c]
+    full_cov: 5x5 covariance matrix for all parameters
+    """
     #placing data into numpy arrays
     E_rec = df['E_rec'].values
     E_true = df['E_true'].values
@@ -76,7 +100,18 @@ def fit_unbinned_mle_simultaneous(df):
     return param_results, all_params, full_cov
 
 def fit_and_plot_simultaneous_unbinned_mle(df, fit_type, figure):
+    """
+    Performs simultaneous unbinned MLE fit, saves results, and plots fitted curves
+    with error bands.
     
+    Inputs
+    df: pandas dataframe of all detector measurements
+    fit_type: name of the fit used to calculate params (e.g., 'simultaneous_fit')
+    figure: string title for the figure
+    
+    Returns
+    fig: matplotlib figure object with fitted curves and error bands
+    """
     #applying simultaneous mle fit
     param_results, all_params, full_cov = fit_unbinned_mle_simultaneous(df)
 
@@ -97,11 +132,31 @@ def fit_and_plot_simultaneous_unbinned_mle(df, fit_type, figure):
 # Question 3) (iii)
 
 def load_data(filepath='../results.json'):
+    """
+    Load parameter results from JSON file.
+    
+    Inputs
+    filepath: path to results.json file (default: '../results.json')
+    
+    Returns
+    data: dictionary containing parameter values and errors for all fit methods
+    """
     with open(filepath, 'r') as f:
         data = json.load(f)
     return data
 
 def plot_parameter_comparison(data):
+    """
+    Plot comparison of parameter values and errors across all three fitting methods.
+    Includes zoomed insets for parameters λ and c due to small error bars.
+    
+    Inputs
+    data: dictionary containing parameter values and errors for all fit methods,
+          typically loaded from results.json
+    
+    Returns
+    fig: matplotlib figure object showing parameter comparison
+    """
     #setting up labels and namings
     params = ['lb', 'dE', 'a', 'b', 'c']
     param_labels = [r'$\lambda$', r'$\Delta$', r'$a$', r'$b$', r'$c$']
