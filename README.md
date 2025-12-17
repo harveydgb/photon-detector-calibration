@@ -4,63 +4,22 @@
 
 This project implements a statistical analysis of photon detector calibration data using multiple estimation methods to determine detector performance parameters.
 
+## Usage
+
+1. **Install deps (Python 3.10+):** `pip install -e .`
+2. **From the repo root, find** `notebooks/solution.ipynb` **and Run All.**
+3. **Outputs land in the repo root:**
+   - **Figures:** `figs/Figure1.1.pdf` ... `Figure4.2.pdf`
+   - **Results:** `results.json` (parameter values/errors for all methods)
+   - **Notebook is executed in-place, keeping outputs in** `notebooks/solution.ipynb`**.**
+
+**Notes:**
+- The non-parametric bootstrap (Q4, n_boot=2500) takes ~1-3 minutes depending on CPU.
+- Paths in the notebook are relative to `notebooks/` (e.g. `../sample.csv`, `../s1_sol/mphil.mplstyle`), keep the working directory as the repo root when executing.
+
 ## Overview
 
 The analysis aims to estimate calibration parameters for a photon detector by fitting models to calibration measurements. The detector was tested at seven energy levels (20, 30, 40, 50, 60, 70, 80 GeV) with 1000 measurements at each level. The measured energy $E$ follows a normal distribution with mean $\mu_E = \lambda E_0 + \Delta$ and width $\sigma_E$ given by a resolution model. The goal is to estimate the parameters $\{\lambda, \Delta, a, b, c\}$ using various statistical methods.
-
-## Installation
-
-### Prerequisites
-- Python ≥3.10
-
-### Setup
-
-1. Clone or download this repository
-2. Install the package in editable mode:
-   ```bash
-   pip install -e .
-   ```
-
-This will install the `s1_sol` package and all required dependencies.
-
-## Dependencies
-
-The project requires the following Python packages:
-- `numpy` - Numerical computations
-- `matplotlib` - Plotting and visualization
-- `scipy` - Scientific computing (optimization, curve fitting)
-- `pandas` - Data manipulation
-- `iminuit` - Maximum likelihood estimation
-
-All dependencies are automatically installed when installing the package.
-
-## Usage
-
-### Running the Analysis
-
-1. Open the solution notebook:
-   ```bash
-   jupyter notebook notebooks/solution.ipynb
-   ```
-
-2. Run all cells to execute the complete analysis pipeline
-
-3. The notebook will generate:
-   - All figures in the `figs/` directory
-   - `results.json` containing parameter estimates and uncertainties
-
-### Quick Start
-
-```python
-from s1_sol import main
-import matplotlib.pyplot as plt
-
-# Load data and set plotting style
-main.set_mpl_style()
-df = main.load_data()
-
-# Run analysis (see solution.ipynb for full workflow)
-```
 
 ## Project Structure
 
@@ -96,58 +55,55 @@ hb747/
 
 ## Analysis Methods
 
-The project implements four complementary approaches to parameter estimation:
-
-### 1. Sample Estimates (Q1)
+**Q1 - Sample Estimates:**
 - Calculates sample mean and standard deviation for each energy level
 - Fits linear model for mean: $\mu_E = \lambda E_0 + \Delta$
 - Fits resolution model for width using least squares
 - Uses parametric bootstrap for uncertainty bands (16th/84th percentiles)
 
-### 2. Individual MLE Fits (Q2)
+**Q2 - Individual MLE Fits:**
 - Performs unbinned maximum likelihood estimation for each energy level
 - Fits Gaussian distributions independently
 - Validates normal distribution assumption
 - Results used as input for least squares fitting
 
-### 3. Simultaneous MLE Fit (Q3)
+**Q3 - Simultaneous MLE Fit:**
 - Global unbinned maximum likelihood fit across all data
 - Simultaneously estimates all parameters $\{\lambda, \Delta, a, b, c\}$
 - Uses Minuit optimization with parameter constraints
 - Provides unified parameter estimates
 
-### 4. Bootstrap Analysis (Q4)
+**Q4 - Bootstrap Analysis:**
 - Non-parametric bootstrap with 2500 iterations
 - Resamples entire dataset with replacement
 - Applies all three methods to each bootstrap sample
 - Compares bootstrap uncertainties with analytical (Hessian-based) errors
 - Reveals non-Gaussian behavior in parameter distributions
 
+## Dependencies
+
+- `numpy` - Numerical computations
+- `matplotlib` - Plotting and visualization
+- `scipy` - Scientific computing (optimization, curve fitting)
+- `pandas` - Data manipulation
+- `iminuit` - Maximum likelihood estimation
+
+All dependencies are automatically installed when installing the package.
+
 ## Results
 
-### Output Files
+**Output Files:**
+- **Figures** (`figs/` directory): All analysis visualizations saved as PDF files
+- **Parameter Estimates** (`results.json`): Contains parameter values and uncertainties for all three methods (`sample_ests`, `individual_fits`, `simultaneous_fit`)
 
-**Figures** (`figs/` directory):
-- All analysis visualizations saved as PDF files
-- Figures show data distributions, fits, parameter comparisons, and bootstrap results
-
-**Parameter Estimates** (`results.json`):
-- Contains parameter values and uncertainties for all three methods:
-  - `sample_ests`: Sample estimate method
-  - `individual_fits`: Individual MLE method
-  - `simultaneous_fit`: Simultaneous MLE method
-- Each entry includes `values` and `errors` dictionaries
-
-### Key Findings
-
+**Key Findings:**
 - All three methods produce consistent parameter estimates
 - Sample estimate and individual MLE methods show excellent agreement
-- Simultaneous fit shows slight differences due to global optimization
-- Bootstrap analysis reveals non-Gaussian uncertainties for width parameters
 - Detector shows systematic bias ($\lambda \approx 1.012$, $\Delta \approx 1.96$ GeV)
 - Resolution improves at higher energies (fractional error drops from ~11% to ~6%)
+- Bootstrap analysis reveals non-Gaussian uncertainties for width parameters
 
-## Technical Notes
+## Technical Details
 
 - **Uncertainty bands**: Error bands use 16th/84th percentiles (equivalent to ±1σ) to handle non-Gaussian distributions
 - **Bootstrap iterations**: 2500 bootstrap samples used for uncertainty analysis
