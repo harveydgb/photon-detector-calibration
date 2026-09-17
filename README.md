@@ -67,7 +67,6 @@ be trusted without assuming the model is correct.
 ├── notebooks/
 │   ├── solution.ipynb     # Full analysis and written discussion
 │   └── instructions.ipynb # Problem statement
-├── tests/                 # CI and notebook-execution checks
 ├── figs/                  # Generated figures (PDF)
 ├── results.json           # Parameter values and uncertainties, all methods
 ├── sample.csv             # Calibration data — 7,000 measurements
@@ -98,14 +97,6 @@ Notebook paths are relative to `notebooks/` (`../sample.csv`,
 
 The Q4 bootstrap takes roughly 1–3 minutes depending on CPU.
 
-## Tests
-
-```bash
-pytest tests -v
-```
-
-Checks that the notebook executes end to end, that `results.json` is produced in the expected
-format, and that every required figure is generated.
 
 ## Author
 
